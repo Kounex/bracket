@@ -103,6 +103,22 @@ function ScheduleRow({
                 {formatMatchInput1(t, stageItemsLookup, matchesLookup, data.match)}
               </Text>
             </Grid.Col>
+            {data.match.sets && data.match.sets.length > 0 && (
+              <Grid.Col span="content" pb="0rem">
+                <Group gap={4}>
+                  {data.match.sets.map((s: any) => (
+                    <Text
+                      key={s.set_number}
+                      size="sm"
+                      fw={s.score1 > s.score2 ? 700 : 400}
+                      c={s.score1 > s.score2 ? 'green' : 'dimmed'}
+                    >
+                      {s.score1}
+                    </Text>
+                  ))}
+                </Group>
+              </Grid.Col>
+            )}
             <Grid.Col span="content" pb="0rem">
               <div
                 style={{
@@ -124,6 +140,22 @@ function ScheduleRow({
                 {formatMatchInput2(t, stageItemsLookup, matchesLookup, data.match)}
               </Text>
             </Grid.Col>
+            {data.match.sets && data.match.sets.length > 0 && (
+              <Grid.Col span="content" pb="0rem">
+                <Group gap={4}>
+                  {data.match.sets.map((s: any) => (
+                    <Text
+                      key={s.set_number}
+                      size="sm"
+                      fw={s.score2 > s.score1 ? 700 : 400}
+                      c={s.score2 > s.score1 ? 'green' : 'dimmed'}
+                    >
+                      {s.score2}
+                    </Text>
+                  ))}
+                </Group>
+              </Grid.Col>
+            )}
             <Grid.Col span="content" pb="0rem">
               <div
                 style={{

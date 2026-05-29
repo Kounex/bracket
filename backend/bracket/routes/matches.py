@@ -17,6 +17,7 @@ from bracket.logic.scheduling.upcoming_matches import (
     get_draft_round_in_stage_item,
     get_upcoming_matches_for_swiss,
 )
+from bracket.logic.scoring import derive_set_wins, validate_sets
 from bracket.models.db.match import (
     Match,
     MatchBody,
@@ -32,8 +33,10 @@ from bracket.routes.auth import user_authenticated_for_tournament
 from bracket.routes.models import SingleMatchResponse, SuccessResponse, UpcomingMatchesResponse
 from bracket.routes.util import disallow_archived_tournament, match_dependency
 from bracket.sql.courts import get_all_courts_in_tournament
+from bracket.sql.match_sets import sql_replace_match_sets
 from bracket.sql.matches import sql_create_match, sql_delete_match, sql_update_match
 from bracket.sql.rounds import get_round_by_id
+from bracket.sql.sport_configs import get_sport_config
 from bracket.sql.stage_items import get_stage_item
 from bracket.sql.stages import get_full_tournament_details
 from bracket.sql.tournaments import sql_get_tournament
@@ -164,6 +167,16 @@ async def update_match_by_id(
 ) -> SuccessResponse:
     await check_foreign_keys_belong_to_tournament(match_body, tournament_id)
     tournament = await sql_get_tournament(tournament_id)
+
+    sport_config = await get_sport_config(tournament_id)
+    if match_body.sets is not None and sport_config is not None:
+        validate_sets(match_body.sets, sport_config)
+
+        set_wins1, set_wins2 = derive_set_wins(match_body.sets)
+        match_body.stage_item_input1_score = set_wins1
+        match_body.stage_item_input2_score = set_wins2
+
+        await sql_replace_match_sets(match_id, match_body.sets)
 
     await sql_update_match(match_id, match_body, tournament)
 

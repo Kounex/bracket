@@ -1,0 +1,108 @@
+---
+description: React/TypeScript frontend conventions — components, data fetching, state, i18n
+globs: frontend/**
+---
+
+# Frontend Conventions
+
+## Stack
+
+React 19 + TypeScript + Vite 8 + Mantine 8 + react-router 7 + SWR + i18next + nuqs.
+
+## Imports
+
+Use path aliases — never relative paths across layers:
+- `@components/*`, `@pages/*`, `@openapi`, `@services/*`
+
+Import types from `@openapi`. Never import from `sdk.gen.ts` — types only.
+
+## File Naming
+
+- Files: `snake_case.tsx` (e.g. `player_create_modal.tsx`)
+- Layout partials: `_prefix.tsx` (e.g. `_layout.tsx`)
+- Route folders: `[param]` convention (but routing uses react-router `:param`)
+- Pages: `export default function XxxPage()`
+
+## Page Patterns
+
+```tsx
+export default function PlayersPage() {
+  const { tournamentData } = getTournamentIdFromRouter();
+  const swrPlayersResponse = getPlayersPaginated(tournamentData.id, pagination);
+  const { t } = useTranslation();
+  checkForAuthError(swrPlayersResponse);
+
+  return (
+    <TournamentLayout tournament_id={tournamentData.id}>
+      <Grid justify="space-between">
+        <Grid.Col span="auto">
+          <Title>{capitalize(t('players_title'))}</Title>
+        </Grid.Col>
+        <Grid.Col span="content">
+          <PlayerCreateModal swrPlayersResponse={swrPlayersResponse} ... />
+        </Grid.Col>
+      </Grid>
+      <PlayersTable swrPlayersResponse={swrPlayersResponse} />
+    </TournamentLayout>
+  );
+}
+```
+
+- Authenticated pages wrap in `Layout` or `TournamentLayout`
+- Fetch with `get*()` from `@services/adapter` (SWR hooks)
+- Call `checkForAuthError()` when auth required
+- Pass `swrXxxResponse` props to tables/modals
+- Titles: `capitalize(t('key'))`
+
+## Component Patterns
+
+- Functional components only, default exports for top-level
+- Mantine for all UI (Grid, Button, TextInput, Modal, etc.)
+- `@mantine/form` for forms; validation returns `null` if valid, `t('key')` if invalid
+- After mutations: `await swrResponse.mutate()` then close modal
+- Navigation: use `PreloadLink` (react-router Link wrapper), not raw `<a>`
+- Loading: `TableSkeletonSingleColumn`; errors: `RequestErrorAlert`
+- Icons: `@tabler/icons-react` (primary), tree-shaken `react-icons` (secondary)
+- CSS: CSS Modules (`*.module.css`) imported as `classes`
+
+## API / Data Fetching
+
+**Reads** — SWR hooks in `services/adapter.tsx`:
+```tsx
+export function getPlayersPaginated(tournament_id: number, pagination: Pagination) {
+  return useSWR(`tournaments/${tournament_id}/players?...`, fetcher);
+}
+```
+
+**Writes** — async functions in `services/{entity}.tsx`:
+```tsx
+export async function createPlayer(tournament_id: number, name: string, active: boolean) {
+  return createAxios()
+    .post(`tournaments/${tournament_id}/players`, { name, active })
+    .catch(handleRequestError);
+}
+```
+
+Response access: `swrResponse.data?.data.{field}` (backend wraps in `{data: ...}`).
+
+## State Management
+
+| State type | Mechanism |
+|---|---|
+| Server data | SWR |
+| Auth session | localStorage key `login` |
+| URL query params | nuqs `useQueryState` |
+| Local UI | `useState` |
+| Table sort/pagination | `getTableState()` (component-local) |
+| Forms | `@mantine/form` |
+
+No Redux, Zustand, or React Context.
+
+## i18n
+
+All user-facing strings use `useTranslation()`. Keys in `public/locales/en/common.json` (snake_case).
+Do not hardcode UI strings — add translation keys.
+
+## Formatting
+
+Prettier: 100 width, single quotes, trailing commas, `prettier-plugin-organize-imports`.

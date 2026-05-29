@@ -1,0 +1,69 @@
+---
+description: Deployment modes, Docker setup, environment configuration
+globs: docker-compose.yml,Dockerfile,backend/Dockerfile,frontend/Dockerfile,run.sh,process-compose*.yml
+---
+
+# Deployment & Dev Environment
+
+## Local Development
+
+```bash
+./run.sh                    # frontend (Vite) + backend (Gunicorn reload) on :8400
+# OR
+cp process-compose-example.yml process-compose.yml
+process-compose up -d       # frontend :3000, backend :8400, docs :3001
+```
+
+Prerequisites: `pnpm`, `uv`, PostgreSQL running locally.
+
+Seed dev data: `cd backend && uv run ./cli.py create-dev-db`
+
+## Docker / Podman (Combined)
+
+```bash
+podman compose up -d        # → http://localhost:8400
+# or: docker compose up -d
+```
+
+This machine uses **podman** (not Docker). Podman machine must be running first:
+`podman machine start`. The Docker API socket is forwarded automatically.
+
+Combined image serves frontend from `/app/frontend-dist` with `SERVE_FRONTEND=true` and
+`API_PREFIX=/api`. Backend + frontend in one container + Postgres.
+
+## Deployment Modes
+
+| Mode | Images | Ports | API_PREFIX |
+|------|--------|-------|------------|
+| Local dev | None | 8400 | "" (empty) |
+| Docker combined | `ghcr.io/evroon/bracket` | 8400 | /api |
+| Docker split | `-backend` + `-frontend` | 8400 + 3000 | "" |
+
+## Environment Config
+
+Selected via `ENVIRONMENT` env var: `DEVELOPMENT`, `PRODUCTION`, `DEMO`, `CI`.
+
+Key backend env vars (pydantic-settings):
+- `PG_DSN` — PostgreSQL connection string
+- `JWT_SECRET` — JWT signing key
+- `CORS_ORIGINS` / `CORS_ORIGIN_REGEX` — allowed origins
+- `SERVE_FRONTEND` — serve SPA from backend (combined mode)
+- `API_PREFIX` — route prefix (set `/api` when serving frontend)
+- `AUTO_RUN_MIGRATIONS` — run Alembic on startup
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD` — seed admin user
+- `SENTRY_DSN` — optional error tracking
+
+Frontend env vars (Vite, build-time):
+- `VITE_API_BASE_URL` — must include `/api` when backend uses API_PREFIX
+- `VITE_HCAPTCHA_SITE_KEY`
+
+## Env Files
+
+- `backend/ci.env` — committed, used in CI/tests
+- `backend/dev.env` — gitignored, local dev
+- `backend/prod.env` — gitignored, production
+- `frontend/.env.development` — committed, dev defaults
+
+## Docker Publish
+
+Tags matching `v*` trigger GHCR publish for all 3 images (amd64 + arm64).

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Table, UniqueConstraint, func
+from sqlalchemy import Column, ForeignKey, Index, Integer, String, Table, UniqueConstraint, func
 from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
 from sqlalchemy.sql.sqltypes import BigInteger, Boolean, DateTime, Enum, Float, Text
 
@@ -237,4 +237,40 @@ rankings = Table(
     Column("draw_points", Float, nullable=False),
     Column("loss_points", Float, nullable=False),
     Column("add_score_points", Boolean, nullable=False),
+)
+
+sport_configs = Table(
+    "sport_configs",
+    metadata,
+    Column("id", BigInteger, primary_key=True, index=True, autoincrement=True),
+    Column(
+        "tournament_id",
+        BigInteger,
+        ForeignKey("tournaments.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    ),
+    Column("name", String, nullable=False, server_default="Custom"),
+    Column("num_sets", Integer, nullable=False),
+    Column("points_per_set", Integer, nullable=True),
+    Column("points_last_set", Integer, nullable=True),
+    Column("min_point_difference", Integer, nullable=True),
+    Column("max_score", Integer, nullable=True),
+)
+
+match_sets = Table(
+    "match_sets",
+    metadata,
+    Column("id", BigInteger, primary_key=True, index=True, autoincrement=True),
+    Column(
+        "match_id",
+        BigInteger,
+        ForeignKey("matches.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("set_number", Integer, nullable=False),
+    Column("score1", Integer, nullable=False, server_default="0"),
+    Column("score2", Integer, nullable=False, server_default="0"),
+    UniqueConstraint("match_id", "set_number"),
+    Index("ix_match_sets_match_id", "match_id"),
 )

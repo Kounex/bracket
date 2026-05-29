@@ -1,9 +1,11 @@
+import json
 from decimal import Decimal
 
 from heliclockter import datetime_utc, timedelta
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from bracket.models.db.court import Court
+from bracket.models.db.match_set import MatchSet, MatchSetBody
 from bracket.models.db.shared import BaseModelORM
 from bracket.models.db.stage_item_inputs import StageItemInput
 from bracket.utils.id_types import CourtId, MatchId, RoundId, StageItemInputId
@@ -58,6 +60,19 @@ class MatchWithDetails(Match):
     """
 
     court: Court | None = None
+    sets: list[MatchSet] = []
+
+    @field_validator("sets", mode="before")
+    @staticmethod
+    def handle_sets(values: list[MatchSet] | str | None) -> list[MatchSet]:
+        if values is None:
+            return []
+        if isinstance(values, str):
+            parsed = json.loads(values)
+            if parsed == [None]:
+                return []
+            return parsed
+        return values
 
 
 def get_match_hash(
@@ -70,6 +85,7 @@ class MatchWithDetailsDefinitive(Match):
     stage_item_input1: StageItemInput  # pyrefly: ignore [bad-override]
     stage_item_input2: StageItemInput  # pyrefly: ignore [bad-override]
     court: Court | None = None
+    sets: list[MatchSet] = []
 
     @property
     def stage_item_inputs(self) -> list[StageItemInput]:
@@ -93,6 +109,7 @@ class MatchBody(BaseModelORM):
     court_id: CourtId | None = None
     custom_duration_minutes: int | None = None
     custom_margin_minutes: int | None = None
+    sets: list[MatchSetBody] | None = None
 
 
 class MatchCreateBodyFrontend(BaseModelORM):

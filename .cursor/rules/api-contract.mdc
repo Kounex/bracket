@@ -1,0 +1,51 @@
+---
+description: OpenAPI contract workflow between backend and frontend
+globs: backend/openapi/**,frontend/src/openapi/**,frontend/openapi-ts.config.js,backend/cli.py
+---
+
+# API Contract Workflow
+
+## Overview
+
+OpenAPI-first: backend generates JSON spec → frontend generates TypeScript types.
+The generated SDK functions exist but are NOT used — only types are consumed.
+
+## Regeneration Steps
+
+When changing backend routes, request/response models, or Pydantic types:
+
+1. Edit backend routes/models (set `response_model=`, define Body types, etc.)
+2. `cd backend && uv run ./cli.py generate-openapi`
+3. `cd frontend && pnpm openapi-ts`
+4. Fix any frontend type errors: `pnpm test` (runs tsc + prettier)
+5. Commit `backend/openapi/openapi.json` AND `frontend/src/openapi/**` together
+
+## Backend Spec Generation
+
+`backend/cli.py` calls `app.openapi()` → writes `backend/openapi/openapi.json`.
+A monkey-patch in `backend/openapi/openapi.py` forces all Pydantic fields as required
+in the spec (avoids optional/null union types in generated TS).
+
+CI enforces freshness via `test_openapi_up_to_date` in pytest.
+
+## Frontend Type Generation
+
+Config: `frontend/openapi-ts.config.js` using `@hey-api/openapi-ts`.
+Input: `../backend/openapi/openapi.json` → Output: `frontend/src/openapi/`
+
+Generated files (do NOT edit):
+- `types.gen.ts` — all domain types
+- `sdk.gen.ts` — typed API functions (not used in app code)
+- `client.gen.ts` + `client/` — Axios client infra (not used)
+
+## Frontend Usage Convention
+
+Import types: `import { Tournament, PlayersResponse } from '@openapi'`
+HTTP calls: use `createAxios()` from `@services/adapter` (reads) and `@services/{entity}` (writes).
+Do NOT use generated SDK functions or create duplicate hand-written types.
+
+## API Prefix
+
+- Local dev (`run.sh`): `API_PREFIX=""` → paths like `/tournaments`
+- Combined Docker: `API_PREFIX=/api` → paths like `/api/tournaments`
+- Frontend `VITE_API_BASE_URL` must match (e.g. `http://localhost:8400/api`)

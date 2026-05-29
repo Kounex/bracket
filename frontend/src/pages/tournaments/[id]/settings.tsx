@@ -11,6 +11,7 @@ import {
   Image,
   NumberInput,
   Select,
+  Switch,
   Text,
   TextInput,
 } from '@mantine/core';
@@ -38,6 +39,7 @@ import {
   handleRequestError,
   removeTournamentLogo,
 } from '@services/adapter';
+import { getSportConfig, getSportPresets } from '@services/sport_config';
 import {
   archiveTournament,
   deleteTournament,
@@ -125,6 +127,16 @@ function GeneralTournamentForm({
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const swrSportConfigResponse = getSportConfig(tournament.id);
+  const sportConfig = swrSportConfigResponse.data?.data;
+
+  const swrPresetsResponse = getSportPresets();
+  const presets = swrPresetsResponse.data ?? {};
+  const presetOptions = [
+    ...Object.keys(presets).map((name) => ({ value: name, label: name })),
+    { value: '__custom__', label: t('custom_sport_label') },
+  ];
+
   const form = useForm({
     initialValues: {
       start_time: dayjs(tournament.start_time),
@@ -136,6 +148,14 @@ function GeneralTournamentForm({
       auto_assign_courts: tournament.auto_assign_courts,
       duration_minutes: tournament.duration_minutes,
       margin_minutes: tournament.margin_minutes,
+      enable_set_scoring: sportConfig != null,
+      preset: null as string | null,
+      sport_name: sportConfig?.name ?? 'Custom',
+      num_sets: sportConfig?.num_sets ?? 3,
+      points_per_set: sportConfig?.points_per_set ?? null,
+      points_last_set: sportConfig?.points_last_set ?? null,
+      min_point_difference: sportConfig?.min_point_difference ?? null,
+      max_score: sportConfig?.max_score ?? null,
     },
 
     validate: {
@@ -154,6 +174,17 @@ function GeneralTournamentForm({
       onSubmit={form.onSubmit(async (values) => {
         assert_not_none(values.club_id);
 
+        const sportConfig = values.enable_set_scoring
+          ? {
+              name: values.sport_name,
+              num_sets: values.num_sets,
+              points_per_set: values.points_per_set,
+              points_last_set: values.points_last_set,
+              min_point_difference: values.min_point_difference,
+              max_score: values.max_score,
+            }
+          : null;
+
         await updateTournament(
           tournament.id,
           values.name,
@@ -163,9 +194,11 @@ function GeneralTournamentForm({
           values.auto_assign_courts,
           values.start_time.toISOString(),
           values.duration_minutes,
-          values.margin_minutes
+          values.margin_minutes,
+          sportConfig
         );
 
+        await swrSportConfigResponse.mutate();
         await swrTournamentResponse.mutate();
       })}
     >
@@ -284,6 +317,93 @@ function GeneralTournamentForm({
           {t('remove_logo')}
         </Button>
       </Fieldset>
+      <Fieldset legend={t('sport_config_title')} mt="lg" radius="md">
+        <Switch
+          label={t('enable_set_scoring_label')}
+          checked={form.values.enable_set_scoring}
+          onChange={(event) => {
+            form.setFieldValue('enable_set_scoring', event.currentTarget.checked);
+            if (!event.currentTarget.checked) {
+              form.setFieldValue('preset', null);
+            }
+          }}
+        />
+
+        {form.values.enable_set_scoring && (
+          <>
+            <Select
+              label={t('preset_label')}
+              placeholder={t('preset_placeholder')}
+              data={presetOptions}
+              mt="md"
+              value={form.values.preset}
+              onChange={(value) => {
+                form.setFieldValue('preset', value);
+                if (value && value !== '__custom__' && presets[value]) {
+                  const p = presets[value];
+                  form.setFieldValue('sport_name', p.name);
+                  form.setFieldValue('num_sets', p.num_sets);
+                  form.setFieldValue('points_per_set', p.points_per_set);
+                  form.setFieldValue('points_last_set', p.points_last_set);
+                  form.setFieldValue('min_point_difference', p.min_point_difference);
+                  form.setFieldValue('max_score', p.max_score);
+                } else if (value === '__custom__') {
+                  form.setFieldValue('sport_name', 'Custom');
+                }
+              }}
+            />
+            <TextInput
+              label={t('sport_name_label')}
+              mt="md"
+              {...form.getInputProps('sport_name')}
+            />
+            <NumberInput
+              label={t('num_sets_label')}
+              mt="md"
+              min={1}
+              max={9}
+              {...form.getInputProps('num_sets')}
+            />
+            <Grid>
+              <Grid.Col span={{ sm: 6 }}>
+                <NumberInput
+                  label={t('points_per_set_label')}
+                  mt="md"
+                  min={1}
+                  {...form.getInputProps('points_per_set')}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ sm: 6 }}>
+                <NumberInput
+                  label={t('points_last_set_label')}
+                  mt="md"
+                  min={1}
+                  {...form.getInputProps('points_last_set')}
+                />
+              </Grid.Col>
+            </Grid>
+            <Grid>
+              <Grid.Col span={{ sm: 6 }}>
+                <NumberInput
+                  label={t('min_point_difference_label')}
+                  mt="md"
+                  min={1}
+                  {...form.getInputProps('min_point_difference')}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ sm: 6 }}>
+                <NumberInput
+                  label={t('max_score_label')}
+                  mt="md"
+                  min={1}
+                  {...form.getInputProps('max_score')}
+                />
+              </Grid.Col>
+            </Grid>
+          </>
+        )}
+      </Fieldset>
+
       <Fieldset legend={t('miscellaneous_title')} mt="lg" radius="md">
         <Checkbox
           label={t('miscellaneous_label')}

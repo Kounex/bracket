@@ -1,3 +1,4 @@
+import { SportConfigBody } from '@openapi';
 import { Dayjs } from 'dayjs';
 import { createAxios, handleRequestError } from './adapter';
 
@@ -10,7 +11,8 @@ export async function createTournament(
   auto_assign_courts: boolean,
   start_time: Dayjs,
   duration_minutes: number,
-  margin_minutes: number
+  margin_minutes: number,
+  sport_config: SportConfigBody | null = null
 ) {
   return createAxios()
     .post('tournaments', {
@@ -23,6 +25,7 @@ export async function createTournament(
       start_time,
       duration_minutes,
       margin_minutes,
+      sport_config,
     })
     .catch((response: any) => handleRequestError(response));
 }
@@ -48,7 +51,8 @@ export async function updateTournament(
   auto_assign_courts: boolean,
   start_time: string,
   duration_minutes: number,
-  margin_minutes: number
+  margin_minutes: number,
+  sport_config: SportConfigBody | null = null
 ) {
   return createAxios()
     .put(`tournaments/${tournament_id}`, {
@@ -60,6 +64,7 @@ export async function updateTournament(
       start_time,
       duration_minutes,
       margin_minutes,
+      sport_config,
     })
     .catch((response: any) => handleRequestError(response));
 }

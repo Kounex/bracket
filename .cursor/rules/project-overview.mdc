@@ -1,0 +1,61 @@
+---
+description: Bracket project overview — tech stack, repo layout, architecture
+alwaysApply: true
+---
+
+# Bracket — Project Overview
+
+Tournament management system: React SPA + FastAPI REST API + PostgreSQL.
+
+## Repo Layout
+
+```
+backend/         Python FastAPI API + business logic (uv)
+frontend/        React 19 SPA (Vite 8, pnpm)
+docs/            Next.js 16 + Nextra documentation site
+docker-compose.yml  Combined image + Postgres
+Dockerfile       Combined backend+frontend image
+run.sh           Local dev: frontend + backend together
+```
+
+## Tech Stack
+
+| Layer       | Tech                                                      |
+|-------------|-----------------------------------------------------------|
+| Backend     | Python 3.12+ / FastAPI / SQLAlchemy Core / Alembic        |
+| Frontend    | React 19 / TypeScript 5.9 / Vite 8 / Mantine 8           |
+| Database    | PostgreSQL (async via databases + asyncpg)                |
+| Auth        | JWT Bearer (HS256, 1-week expiry), bcrypt, hCaptcha       |
+| Data fetch  | SWR (reads), Axios (writes), OpenAPI-generated TS types   |
+| i18n        | i18next (12 languages, Crowdin sync)                      |
+| Docs        | Next.js 16 + Nextra 4 + Tailwind 4                       |
+| Package mgr | uv (Python), pnpm (Node)                                 |
+
+## Architecture
+
+Three-tier SPA + REST monolith, deployable combined or split.
+
+Backend layers: `routes/ → logic/ → sql/ → schema.py`
+Frontend layers: `pages/ → components/ → services/ → openapi/`
+
+OpenAPI-first contract: backend generates spec → frontend generates TS types.
+
+## Key Conventions
+
+- All backend routers use `APIRouter(prefix=config.api_prefix)`, tags set in `app.py`
+- Response wrappers: `SuccessResponse` for mutations, `DataResponse[T]` for reads
+- Frontend uses `@openapi` for types only, hand-written Axios+SWR for HTTP calls
+- All user-facing strings go through i18next (`useTranslation()`)
+- ID types are branded `NewType` aliases (e.g. `TournamentId`, `TeamId`)
+- Timestamps use `heliclockter.datetime_utc`, not stdlib datetime
+
+## Git Workflow
+
+- `master` tracks upstream `evroon/bracket`
+- `dev` branch for our feature work
+- Upstream remote: `upstream` (https://github.com/evroon/bracket.git)
+
+## Dev Credentials
+
+- Email: `test@example.org`
+- Password: `aeGhoe1ahng2Aezai0Dei6Aih6dieHoo`

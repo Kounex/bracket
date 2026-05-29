@@ -44,7 +44,13 @@ async def get_full_tournament_details(
                 matches.*,
                 to_json(sii1) as stage_item_input1,
                 to_json(sii2) as stage_item_input2,
-                to_json(c) as court
+                to_json(c) as court,
+                COALESCE(
+                    (SELECT json_agg(ms ORDER BY ms.set_number)
+                     FROM match_sets ms
+                     WHERE ms.match_id = matches.id),
+                    '[]'::json
+                ) as sets
             FROM matches
             LEFT JOIN inputs_with_teams sii1 on sii1.id = matches.stage_item_input1_id
             LEFT JOIN inputs_with_teams sii2 on sii2.id = matches.stage_item_input2_id

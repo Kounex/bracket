@@ -599,6 +599,20 @@
             "title": "Round Id",
             "type": "integer"
           },
+          "sets": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MatchSetBody"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sets"
+          },
           "stage_item_input1_score": {
             "default": 0,
             "title": "Stage Item Input1 Score",
@@ -616,7 +630,8 @@
           "stage_item_input2_score",
           "court_id",
           "custom_duration_minutes",
-          "custom_margin_minutes"
+          "custom_margin_minutes",
+          "sets"
         ],
         "title": "MatchBody",
         "type": "object"
@@ -722,6 +737,72 @@
         "title": "MatchRescheduleBody",
         "type": "object"
       },
+      "MatchSet": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "match_id": {
+            "title": "Match Id",
+            "type": "integer"
+          },
+          "score1": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Score1",
+            "type": "integer"
+          },
+          "score2": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Score2",
+            "type": "integer"
+          },
+          "set_number": {
+            "minimum": 1.0,
+            "title": "Set Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "match_id",
+          "set_number",
+          "score1",
+          "score2",
+          "id"
+        ],
+        "title": "MatchSet",
+        "type": "object"
+      },
+      "MatchSetBody": {
+        "properties": {
+          "score1": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Score1",
+            "type": "integer"
+          },
+          "score2": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Score2",
+            "type": "integer"
+          },
+          "set_number": {
+            "minimum": 1.0,
+            "title": "Set Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "set_number",
+          "score1",
+          "score2"
+        ],
+        "title": "MatchSetBody",
+        "type": "object"
+      },
       "MatchWithDetails": {
         "description": "MatchWithDetails has zero or one defined stage item inputs, but not both.",
         "properties": {
@@ -799,6 +880,14 @@
           "round_id": {
             "title": "Round Id",
             "type": "integer"
+          },
+          "sets": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MatchSet"
+            },
+            "title": "Sets",
+            "type": "array"
           },
           "stage_item_input1": {
             "anyOf": [
@@ -928,7 +1017,8 @@
           "id",
           "stage_item_input1",
           "stage_item_input2",
-          "court"
+          "court",
+          "sets"
         ],
         "title": "MatchWithDetails",
         "type": "object"
@@ -1010,6 +1100,14 @@
             "title": "Round Id",
             "type": "integer"
           },
+          "sets": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MatchSet"
+            },
+            "title": "Sets",
+            "type": "array"
+          },
           "stage_item_input1": {
             "anyOf": [
               {
@@ -1132,7 +1230,8 @@
           "id",
           "stage_item_input1",
           "stage_item_input2",
-          "court"
+          "court",
+          "sets"
         ],
         "title": "MatchWithDetailsDefinitive",
         "type": "object"
@@ -1615,6 +1714,169 @@
           "data"
         ],
         "title": "SingleTeamResponse",
+        "type": "object"
+      },
+      "SportConfig": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "min_point_difference": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Point Difference"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "num_sets": {
+            "title": "Num Sets",
+            "type": "integer"
+          },
+          "points_last_set": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points Last Set"
+          },
+          "points_per_set": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points Per Set"
+          },
+          "tournament_id": {
+            "title": "Tournament Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tournament_id",
+          "name",
+          "num_sets",
+          "points_per_set",
+          "points_last_set",
+          "min_point_difference",
+          "max_score",
+          "id"
+        ],
+        "title": "SportConfig",
+        "type": "object"
+      },
+      "SportConfigBody": {
+        "properties": {
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "min_point_difference": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Point Difference"
+          },
+          "name": {
+            "default": "Custom",
+            "title": "Name",
+            "type": "string"
+          },
+          "num_sets": {
+            "default": 3,
+            "title": "Num Sets",
+            "type": "integer"
+          },
+          "points_last_set": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points Last Set"
+          },
+          "points_per_set": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points Per Set"
+          }
+        },
+        "required": [
+          "name",
+          "num_sets",
+          "points_per_set",
+          "points_last_set",
+          "min_point_difference",
+          "max_score"
+        ],
+        "title": "SportConfigBody",
+        "type": "object"
+      },
+      "SportConfigResponse": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "SportConfigResponse",
         "type": "object"
       },
       "StageActivateBody": {
@@ -2670,6 +2932,16 @@
             "title": "Players Can Be In Multiple Teams",
             "type": "boolean"
           },
+          "sport_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportConfigBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "start_time": {
             "format": "date-time",
             "title": "Start Time",
@@ -2685,6 +2957,7 @@
           "auto_assign_courts",
           "duration_minutes",
           "margin_minutes",
+          "sport_config",
           "club_id"
         ],
         "title": "TournamentBody",
@@ -2759,6 +3032,16 @@
             "title": "Players Can Be In Multiple Teams",
             "type": "boolean"
           },
+          "sport_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportConfigBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "start_time": {
             "format": "date-time",
             "title": "Start Time",
@@ -2773,7 +3056,8 @@
           "players_can_be_in_multiple_teams",
           "auto_assign_courts",
           "duration_minutes",
-          "margin_minutes"
+          "margin_minutes",
+          "sport_config"
         ],
         "title": "TournamentUpdateBody",
         "type": "object"
@@ -2978,7 +3262,7 @@
     }
   },
   "info": {
-    "description": "\n### Description\nThis API allows you to do everything the frontend of [Bracket](https://github.com/evroon/bracket)\nallows you to do (the frontend uses this API as well).\n\nFore more information, see the [documentation](https://docs.bracketapp.nl).\n\n### Table of Contents\n*(links only work for [ReDoc](https://api.bracketapp.nl/redoc), not for Swagger UI)*\n\n- [Auth](#tag/Auth)\n\n- [Clubs](#tag/Clubs)\n\n- [Courts](#tag/Courts)\n\n- [Internals](#tag/Internals)\n\n- [Matches](#tag/Matches)\n\n- [Players](#tag/Players)\n\n- [Rankings](#tag/Rankings)\n\n- [Rounds](#tag/Rounds)\n\n- [Stage Items](#tag/Stage-Items)\n\n- [Stage Item Inputs](#tag/Stage-Item-Inputs)\n\n- [Stages](#tag/Stages)\n\n- [Teams](#tag/Teams)\n\n- [Tournaments](#tag/Tournaments)\n\n- [Users](#tag/Users)\n\n### Links\nGitHub: <https://github.com/evroon/bracket>\n\nDocs: <https://docs.bracketapp.nl>\n\nDemo: <https://www.bracketapp.nl/demo>\n\nAPI docs (Redoc): <https://api.bracketapp.nl/redoc>\n\nAPI docs (Swagger UI): <https://api.bracketapp.nl/docs>\n",
+    "description": "\n### Description\nThis API allows you to do everything the frontend of [Bracket](https://github.com/evroon/bracket)\nallows you to do (the frontend uses this API as well).\n\nFore more information, see the [documentation](https://docs.bracketapp.nl).\n\n### Table of Contents\n*(links only work for [ReDoc](https://api.bracketapp.nl/redoc), not for Swagger UI)*\n\n- [Auth](#tag/Auth)\n\n- [Clubs](#tag/Clubs)\n\n- [Courts](#tag/Courts)\n\n- [Internals](#tag/Internals)\n\n- [Matches](#tag/Matches)\n\n- [Players](#tag/Players)\n\n- [Rankings](#tag/Rankings)\n\n- [Rounds](#tag/Rounds)\n\n- [Sport Configs](#tag/Sport-Configs)\n\n- [Stage Items](#tag/Stage-Items)\n\n- [Stage Item Inputs](#tag/Stage-Item-Inputs)\n\n- [Stages](#tag/Stages)\n\n- [Teams](#tag/Teams)\n\n- [Tournaments](#tag/Tournaments)\n\n- [Users](#tag/Users)\n\n### Links\nGitHub: <https://github.com/evroon/bracket>\n\nDocs: <https://docs.bracketapp.nl>\n\nDemo: <https://www.bracketapp.nl/demo>\n\nAPI docs (Redoc): <https://api.bracketapp.nl/redoc>\n\nAPI docs (Swagger UI): <https://api.bracketapp.nl/docs>\n",
     "license": {
       "name": "AGPL-3.0",
       "url": "https://www.gnu.org/licenses/agpl-3.0.en.html"
@@ -3201,6 +3485,31 @@
         "summary": "Healthcheck ping",
         "tags": [
           "Internals"
+        ]
+      }
+    },
+    "/sport-presets": {
+      "get": {
+        "operationId": "get_sport_presets_sport_presets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/SportConfigBody"
+                  },
+                  "title": "Response Get Sport Presets Sport Presets Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Sport Presets",
+        "tags": [
+          "Sport Configs"
         ]
       }
     },
@@ -4957,6 +5266,148 @@
         "summary": "Schedule Matches",
         "tags": [
           "Matches"
+        ]
+      }
+    },
+    "/tournaments/{tournament_id}/sport-config": {
+      "delete": {
+        "operationId": "delete_tournament_sport_config_tournaments__tournament_id__sport_config_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "title": "Tournament Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Tournament Sport Config",
+        "tags": [
+          "Sport Configs"
+        ]
+      },
+      "get": {
+        "operationId": "get_tournament_sport_config_tournaments__tournament_id__sport_config_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "title": "Tournament Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SportConfigResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Tournament Sport Config",
+        "tags": [
+          "Sport Configs"
+        ]
+      },
+      "put": {
+        "operationId": "update_tournament_sport_config_tournaments__tournament_id__sport_config_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "title": "Tournament Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SportConfigBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Tournament Sport Config",
+        "tags": [
+          "Sport Configs"
         ]
       }
     },

@@ -1,0 +1,155 @@
+---
+description: Bracket architecture reference — system design, data model, data flows
+alwaysApply: false
+---
+
+# Bracket Architecture Reference
+
+## System Design
+
+```
+┌─────────────────────┐     REST/JSON      ┌────────────────────────┐
+│   React 19 SPA      │ ─────────────────►  │   FastAPI Backend      │
+│   Vite 8 + Mantine  │   Bearer JWT        │                        │
+│   SWR + Axios       │ ◄───────────────── │   routes/ → logic/     │
+└─────────────────────┘                     │        ↓       ↓       │
+                                            │       sql/ ← schema.py │
+                                            └──────────┬─────────────┘
+                                                       │
+                                            ┌──────────▼─────────────┐
+                                            │     PostgreSQL         │
+                                            │   (asyncpg + databases)│
+                                            └────────────────────────┘
+```
+
+## Backend Layers
+
+### routes/ — HTTP Layer
+Thin handlers: parse request, inject auth, delegate to logic/sql, wrap response.
+Each file defines `router = APIRouter(prefix=config.api_prefix)`.
+Auth via FastAPI `Depends()`: `user_authenticated`, `user_authenticated_for_tournament`, etc.
+
+### logic/ — Business Rules
+Complex multi-step workflows: scheduling algorithms (elimination, Swiss, round-robin),
+ranking calculations, tournament lifecycle. Calls sql/ layer, may use transactions.
+
+### sql/ — Data Access
+Raw SQL with named params (`:param`) and SQLAlchemy Core selects.
+Returns Pydantic models via `Model.model_validate(record)`.
+
+### schema.py — Database Schema
+SQLAlchemy Core `Table()` definitions. Single source of truth for DB structure.
+Alembic migrations in `backend/alembic/versions/`.
+
+### models/db/ — Domain Models
+Pydantic models: `BaseModelORM` base, `XInsertable → X → XBody` hierarchy.
+Branded ID types (`NewType`), `heliclockter.datetime_utc` for timestamps.
+
+## Frontend Layers
+
+### pages/ — Route Pages
+Top-level page components wrapped in `Layout` or `TournamentLayout`.
+Fetch data with SWR hooks, pass `swrXxxResponse` to children.
+
+### components/ — Reusable UI
+Mantine-based: forms, tables, modals, brackets, scheduling views.
+Sub-organized: `buttons/`, `modals/`, `tables/`, `brackets/`, `scheduling/`, etc.
+
+### services/ — API & State
+- `adapter.tsx`: SWR read hooks (one per API endpoint)
+- `{entity}.tsx`: async mutation functions (create, update, delete)
+- `local_storage.tsx`: auth token persistence
+- `lookups.tsx`: derived data helpers
+
+### openapi/ — Generated Types
+Auto-generated from backend OpenAPI spec. Types only — HTTP calls stay in services/.
+
+## Database Schema
+
+### Core Entity Hierarchy
+
+```
+clubs (multi-tenant root)
+  └── tournaments (per-club)
+        ├── stages (tournament phases)
+        │     └── stage_items (brackets/groups within a stage)
+        │           ├── stage_item_inputs (team slots + standings: points, W/D/L)
+        │           └── rounds (collections of matches)
+        │                 └── matches (actual games, scores, court assignment)
+        ├── teams (tournament-scoped)
+        │     └── players_x_teams (many-to-many)
+        ├── players (tournament-scoped, stats: elo, swiss, W/D/L)
+        ├── courts (physical play areas)
+        └── rankings (point rules: win/draw/loss values)
+```
+
+### Access Control
+
+```
+users
+  └── users_x_clubs (OWNER / COLLABORATOR)
+        └── clubs → tournaments (club membership = tournament access)
+```
+
+### Key Tables
+
+| Table | Key Columns | Notes |
+|-------|-------------|-------|
+| clubs | id, name | Multi-tenant root |
+| tournaments | id, name, club_id, status, dashboard_public | OPEN/ARCHIVED status |
+| stages | id, name, tournament_id, is_active | Sequential tournament phases |
+| stage_items | id, name, stage_id, type, team_count, ranking_id | SINGLE_ELIMINATION / SWISS / ROUND_ROBIN |
+| stage_item_inputs | id, slot, stage_item_id, team_id, points, W/D/L | Team assignments + standings |
+| rounds | id, name, stage_item_id, is_draft | Draft rounds for Swiss scheduling |
+| matches | id, round_id, input1_id, input2_id, scores, court_id | Game results |
+| teams | id, name, tournament_id, elo_score, swiss_score | Tournament-scoped |
+| players | id, name, tournament_id, elo_score, swiss_score | Individual participants |
+| users | id, email, password_hash, account_type | REGULAR / DEMO |
+| courts | id, name, tournament_id | Physical play areas |
+| rankings | id, tournament_id, win/draw/loss_points | Scoring rules |
+
+## Data Flows
+
+### CRUD Operation (e.g. Create Team)
+
+```
+1. Frontend: form submit → createTeam() in services/team.tsx
+2. Axios POST /tournaments/{id}/teams with TeamBody JSON
+3. Backend route: auth check → validate body → sql_create_team()
+4. SQL: INSERT INTO teams ... RETURNING id
+5. Response: SuccessResponse → {"success": true}
+6. Frontend: await swrTeamsResponse.mutate() → SWR refetches
+```
+
+### OpenAPI Contract Sync
+
+```
+1. Modify backend routes/models
+2. cd backend && uv run ./cli.py generate-openapi
+3. cd frontend && pnpm openapi-ts
+4. Frontend types update → fix any TS errors
+5. Commit openapi.json + generated TS together
+```
+
+### Auth Flow
+
+```
+1. POST /token with email + password (OAuth2 form)
+2. Backend: bcrypt verify → mint JWT (HS256, 1-week)
+3. Response: {access_token, token_type, user_id}
+4. Frontend: store in localStorage('login')
+5. Subsequent requests: Authorization: bearer <token>
+6. Backend: decode JWT → load user → check club membership
+```
+
+### Tournament Structure
+
+A tournament is built from nested components:
+- **Stages** represent sequential phases (e.g. group stage → knockout)
+- **Stage Items** are individual brackets/groups within a stage (type determines format)
+- **Stage Item Inputs** are the team slots within a bracket, tracking standings
+- **Rounds** group matches (Swiss uses draft rounds for dynamic scheduling)
+- **Matches** are individual games with two inputs, scores, and optional court
+
+The scheduling engine in `logic/scheduling/` generates match pairings based on
+the stage item type (elimination tree, Swiss pairing, round-robin matrix).

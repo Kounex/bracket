@@ -78,6 +78,9 @@ import type {
   DeleteTeamTournamentsTournamentIdTeamsTeamIdDeleteData,
   DeleteTeamTournamentsTournamentIdTeamsTeamIdDeleteErrors,
   DeleteTeamTournamentsTournamentIdTeamsTeamIdDeleteResponses,
+  DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteData,
+  DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteErrors,
+  DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteResponses,
   DeleteTournamentTournamentsTournamentIdDeleteData,
   DeleteTournamentTournamentsTournamentIdDeleteErrors,
   DeleteTournamentTournamentsTournamentIdDeleteResponses,
@@ -106,12 +109,17 @@ import type {
   GetRankingsTournamentsTournamentIdRankingsGetData,
   GetRankingsTournamentsTournamentIdRankingsGetErrors,
   GetRankingsTournamentsTournamentIdRankingsGetResponses,
+  GetSportPresetsSportPresetsGetData,
+  GetSportPresetsSportPresetsGetResponses,
   GetStagesTournamentsTournamentIdStagesGetData,
   GetStagesTournamentsTournamentIdStagesGetErrors,
   GetStagesTournamentsTournamentIdStagesGetResponses,
   GetTeamsTournamentsTournamentIdTeamsGetData,
   GetTeamsTournamentsTournamentIdTeamsGetErrors,
   GetTeamsTournamentsTournamentIdTeamsGetResponses,
+  GetTournamentSportConfigTournamentsTournamentIdSportConfigGetData,
+  GetTournamentSportConfigTournamentsTournamentIdSportConfigGetErrors,
+  GetTournamentSportConfigTournamentsTournamentIdSportConfigGetResponses,
   GetTournamentsTournamentsGetData,
   GetTournamentsTournamentsGetErrors,
   GetTournamentsTournamentsGetResponses,
@@ -179,6 +187,9 @@ import type {
   UpdateTournamentByIdTournamentsTournamentIdPutData,
   UpdateTournamentByIdTournamentsTournamentIdPutErrors,
   UpdateTournamentByIdTournamentsTournamentIdPutResponses,
+  UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutData,
+  UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutErrors,
+  UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutResponses,
   UpdateUserDetailsUsersUserIdPutData,
   UpdateUserDetailsUsersUserIdPutErrors,
   UpdateUserDetailsUsersUserIdPutResponses,
@@ -190,7 +201,8 @@ import type {
 export type Options<
   TData extends TDataShape = TDataShape,
   ThrowOnError extends boolean = boolean,
-> = Options2<TData, ThrowOnError> & {
+  TResponse = unknown,
+> = Options2<TData, ThrowOnError, TResponse> & {
   /**
    * You can provide a client instance returned by `createClient()` instead of
    * individual options. This might be also useful if you want to implement a
@@ -297,6 +309,18 @@ export const pingPingGet = <ThrowOnError extends boolean = false>(
   (options?.client ?? client).get<PingPingGetResponses, unknown, ThrowOnError>({
     responseType: 'json',
     url: '/ping',
+    ...options,
+  });
+
+/**
+ * Get Sport Presets
+ */
+export const getSportPresetsSportPresetsGet = <ThrowOnError extends boolean = false>(
+  options?: Options<GetSportPresetsSportPresetsGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<GetSportPresetsSportPresetsGetResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/sport-presets',
     ...options,
   });
 
@@ -939,6 +963,72 @@ export const scheduleMatchesTournamentsTournamentIdScheduleMatchesPost = <
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/tournaments/{tournament_id}/schedule_matches',
     ...options,
+  });
+
+/**
+ * Delete Tournament Sport Config
+ */
+export const deleteTournamentSportConfigTournamentsTournamentIdSportConfigDelete = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteData,
+    ThrowOnError
+  >
+) =>
+  (options.client ?? client).delete<
+    DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteResponses,
+    DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/tournaments/{tournament_id}/sport-config',
+    ...options,
+  });
+
+/**
+ * Get Tournament Sport Config
+ */
+export const getTournamentSportConfigTournamentsTournamentIdSportConfigGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GetTournamentSportConfigTournamentsTournamentIdSportConfigGetData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    GetTournamentSportConfigTournamentsTournamentIdSportConfigGetResponses,
+    GetTournamentSportConfigTournamentsTournamentIdSportConfigGetErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    url: '/tournaments/{tournament_id}/sport-config',
+    ...options,
+  });
+
+/**
+ * Update Tournament Sport Config
+ */
+export const updateTournamentSportConfigTournamentsTournamentIdSportConfigPut = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutData,
+    ThrowOnError
+  >
+) =>
+  (options.client ?? client).put<
+    UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutResponses,
+    UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/tournaments/{tournament_id}/sport-config',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**

@@ -4,6 +4,7 @@ from heliclockter import datetime_utc
 from pydantic import Field
 
 from bracket.models.db.shared import BaseModelORM
+from bracket.models.db.sport import SportConfigBody
 from bracket.utils.id_types import ClubId, TournamentId
 from bracket.utils.pydantic import EmptyStrToNone
 from bracket.utils.types import EnumAutoStr
@@ -42,6 +43,7 @@ class TournamentUpdateBody(BaseModelORM):
     auto_assign_courts: bool
     duration_minutes: int = Field(..., ge=1)
     margin_minutes: int = Field(..., ge=0)
+    sport_config: SportConfigBody | None = None
 
 
 class TournamentChangeStatusBody(BaseModelORM):

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: bracket_dev
+      POSTGRES_PASSWORD: bracket_dev
+      POSTGRES_USER: bracket_dev
+    image: postgres
+    ports:
+      - 5432:5432
+    restart: always
+    volumes:
+      - bracket_pg_data:/var/lib/postgresql
+
+volumes:
+  bracket_pg_data:

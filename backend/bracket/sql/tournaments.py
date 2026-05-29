@@ -84,7 +84,7 @@ async def sql_update_tournament(
         """
     await database.execute(
         query=query,
-        values={"tournament_id": tournament_id, **tournament.model_dump()},
+        values={"tournament_id": tournament_id, **tournament.model_dump(exclude={"sport_config"})},
     )
 
 
@@ -133,5 +133,7 @@ async def sql_create_tournament(tournament: TournamentBody) -> TournamentId:
         )
         RETURNING id
         """
-    new_id = await database.fetch_val(query=query, values=tournament.model_dump())
+    new_id = await database.fetch_val(
+        query=query, values=tournament.model_dump(exclude={"sport_config"})
+    )
     return TournamentId(new_id)

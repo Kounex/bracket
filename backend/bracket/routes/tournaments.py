@@ -12,6 +12,7 @@ from bracket.logic.planning.matches import update_start_times_of_matches
 from bracket.logic.subscriptions import check_requirement
 from bracket.logic.tournaments import get_tournament_logo_path
 from bracket.models.db.ranking import RankingCreateBody
+from bracket.models.db.sport import SportConfigBody
 from bracket.models.db.tournament import (
     Tournament,
     TournamentBody,
@@ -33,6 +34,7 @@ from bracket.sql.rankings import (
     sql_create_ranking,
     sql_delete_ranking,
 )
+from bracket.sql.sport_configs import ensure_sport_config
 from bracket.sql.tournaments import (
     sql_create_tournament,
     sql_delete_tournament,
@@ -106,9 +108,11 @@ async def update_tournament_by_id(
     _: UserPublic = Depends(user_authenticated_for_tournament),
     __: Tournament = Depends(disallow_archived_tournament),
 ) -> SuccessResponse:
+    sport_config_body = tournament_body.sport_config
     with check_unique_constraint_violation({UniqueIndex.ix_tournaments_dashboard_endpoint}):
         await sql_update_tournament(tournament_id, tournament_body)
 
+    await ensure_sport_config(tournament_id, sport_config_body)
     await update_start_times_of_matches(tournament_id)
     return SuccessResponse()
 
@@ -176,6 +180,9 @@ async def create_tournament(
 
         ranking = RankingCreateBody()
         await sql_create_ranking(tournament_id, ranking, position=0)
+
+        if tournament_to_insert.sport_config is not None:
+            await ensure_sport_config(tournament_id, tournament_to_insert.sport_config)
 
     return SuccessResponse()
 

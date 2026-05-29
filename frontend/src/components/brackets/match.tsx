@@ -1,4 +1,4 @@
-import { Center, Grid, UnstyledButton, useMantineTheme } from '@mantine/core';
+import { Center, Grid, Group, Text, UnstyledButton, useMantineTheme } from '@mantine/core';
 import { useColorScheme } from '@mantine/hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,12 @@ import { assert_not_none } from '@components/utils/assert';
 import { Time } from '@components/utils/datetime';
 import { formatMatchInput1, formatMatchInput2, isMatchHappening } from '@components/utils/match';
 import { TournamentMinimal } from '@components/utils/tournament';
-import { MatchWithDetails, RoundWithMatches, StagesWithStageItemsResponse } from '@openapi';
+import {
+  MatchSet,
+  MatchWithDetails,
+  RoundWithMatches,
+  StagesWithStageItemsResponse,
+} from '@openapi';
 import { getMatchLookup, getStageItemLookup } from '@services/lookups';
 import classes from './match.module.css';
 
@@ -34,6 +39,29 @@ export function MatchBadge({ match, theme }: { match: MatchWithDetails; theme: a
         </Center>
       </div>
     </Center>
+  );
+}
+
+function SetScoresDisplay({ sets, side }: { sets: MatchSet[]; side: 'score1' | 'score2' }) {
+  if (!sets || sets.length === 0) return null;
+  return (
+    <Group gap={4}>
+      {sets.map((s) => {
+        const score = side === 'score1' ? s.score1 : s.score2;
+        const otherScore = side === 'score1' ? s.score2 : s.score1;
+        const isWinner = score > otherScore;
+        return (
+          <Text
+            key={s.set_number}
+            size="xs"
+            fw={isWinner ? 700 : 400}
+            c={isWinner ? 'green' : 'dimmed'}
+          >
+            {score}
+          </Text>
+        );
+      })}
+    </Group>
   );
 }
 
@@ -72,19 +100,31 @@ export default function Match({
 
   const [opened, setOpened] = useState(false);
 
+  const hasSets = match.sets && match.sets.length > 0;
+
   const bracket = (
     <>
       <MatchBadge match={match} theme={theme} />
       <div className={classes.top} style={team1_style}>
         <Grid grow>
-          <Grid.Col span={10}>{team1_label}</Grid.Col>
+          <Grid.Col span={hasSets ? 6 : 10}>{team1_label}</Grid.Col>
+          {hasSets && (
+            <Grid.Col span={4}>
+              <SetScoresDisplay sets={match.sets} side="score1" />
+            </Grid.Col>
+          )}
           <Grid.Col span={2}>{match.stage_item_input1_score}</Grid.Col>
         </Grid>
       </div>
       <div className={classes.divider} />
       <div className={classes.bottom} style={team2_style}>
         <Grid grow>
-          <Grid.Col span={10}>{team2_label}</Grid.Col>
+          <Grid.Col span={hasSets ? 6 : 10}>{team2_label}</Grid.Col>
+          {hasSets && (
+            <Grid.Col span={4}>
+              <SetScoresDisplay sets={match.sets} side="score2" />
+            </Grid.Col>
+          )}
           <Grid.Col span={2}>{match.stage_item_input2_score}</Grid.Col>
         </Grid>
       </div>

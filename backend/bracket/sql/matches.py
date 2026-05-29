@@ -111,7 +111,7 @@ async def sql_update_match(match_id: MatchId, match: MatchBody, tournament: Tour
         query=query,
         values={
             "match_id": match_id,
-            **match.model_dump(),
+            **match.model_dump(exclude={"sets"}),
             "duration_minutes": duration_minutes,
             "margin_minutes": margin_minutes,
         },

@@ -1,0 +1,119 @@
+---
+description: Python/FastAPI backend conventions — layering, routes, SQL, models
+globs: backend/**
+---
+
+# Backend Conventions
+
+## Layer Boundaries
+
+```
+routes/  → HTTP layer: auth deps, request/response models, thin orchestration
+logic/   → Business rules: multi-step workflows, scheduling, ranking
+sql/     → DB access only: queries + mutations, returns Pydantic models
+schema.py → SQLAlchemy Core Table definitions (single source of truth)
+models/db/ → Pydantic domain, request, and response models
+```
+
+Never import `routes/` from `logic/` or `sql/`. Routes may call `logic/` and `sql/`.
+
+## Route Patterns
+
+```python
+router = APIRouter(prefix=config.api_prefix)
+
+@router.get("/tournaments/{tournament_id}/teams", response_model=TeamsWithPlayersResponse)
+async def get_teams(
+    tournament_id: TournamentId,
+    pagination: PaginationTeams = Depends(),
+    _: UserPublic = Depends(user_authenticated_or_public_dashboard),
+) -> TeamsWithPlayersResponse:
+    return TeamsWithPlayersResponse(data=PaginatedTeams(...))
+```
+
+- Always set `response_model=` on the decorator
+- Auth deps: `_` when unused, `__` for second guard (e.g. `disallow_archived_tournament`)
+- Tags are set centrally in `app.py`, not on individual routers
+- Tournament-scoped: `/tournaments/{tournament_id}/resource`
+- Use branded ID types in path params (`TournamentId`, `TeamId`, etc.)
+
+## Auth Dependencies
+
+| Dependency | Use |
+|---|---|
+| `user_authenticated` | Any logged-in user |
+| `user_authenticated_for_tournament` | Tournament write access |
+| `user_authenticated_for_club` | Club-scoped operations |
+| `user_authenticated_or_public_dashboard` | Read if authed OR dashboard_public=True |
+
+## Response Wrappers (`routes/models.py`)
+
+- Mutations: return `SuccessResponse()` → `{"success": true}`
+- Reads: return `XxxResponse(data=...)` → `{"data": ...}`
+- Paginated: inner model + `DataResponse` subclass
+
+```python
+class PaginatedTeams(BaseModel):
+    count: int
+    teams: list[FullTeamWithPlayers]
+
+class TeamsWithPlayersResponse(DataResponse[PaginatedTeams]):
+    pass
+```
+
+## SQL Layer
+
+Two styles coexist — raw SQL (dominant) and SQLAlchemy Core selects:
+
+```python
+async def sql_get_tournament(tournament_id: TournamentId) -> Tournament:
+    query = """
+        SELECT * FROM tournaments WHERE id = :tournament_id
+    """
+    result = await database.fetch_one(query=query, values={"tournament_id": tournament_id})
+    assert result is not None
+    return Tournament.model_validate(result)
+```
+
+Naming: `sql_create_*`, `sql_update_*`, `sql_delete_*`, `get_*`
+
+Database API: `database.fetch_one()`, `database.fetch_all()`, `database.fetch_val()`,
+`database.execute()`, `async with database.transaction()`
+
+## Pydantic Models
+
+Base class: `BaseModelORM` (from_attributes=True, exclude_none on dump).
+
+Hierarchy per entity:
+- `XInsertable` — fields for INSERT
+- `X(XInsertable)` — adds `id`
+- `XBody` / `XUpdateBody` / `XCreateBody` — API input with validation
+
+Enums: `EnumAutoStr` (value == name). IDs: `NewType` aliases in `utils/id_types.py`.
+Timestamps: `heliclockter.datetime_utc`.
+
+## Error Handling
+
+```python
+with check_foreign_key_violation({ForeignKey.some_fkey}):
+    await sql_delete_thing(...)
+
+with check_unique_constraint_violation({UniqueIndex.ix_something}):
+    await sql_create_thing(...)
+```
+
+Use `check_foreign_keys_belong_to_tournament(body, tournament_id)` before writes.
+
+## Tests
+
+Integration: `@pytest.mark.asyncio(loop_scope="session")`, UvicornTestServer + `auth_context`.
+Use `send_auth_request()` / `send_tournament_request()`. Assert full JSON including `data` wrapper.
+
+Unit: construct Pydantic models directly, no HTTP server. Use `DUMMY_*` fixtures.
+
+## Tooling
+
+- Formatter/linter: ruff
+- Type checkers: mypy, pyrefly
+- Dead code: vulture
+- Pre-commit: `./precommit.sh`

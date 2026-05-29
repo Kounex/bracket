@@ -6,6 +6,7 @@ import {
   Modal,
   NumberInput,
   Select,
+  Switch,
   TextInput,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
@@ -20,6 +21,7 @@ import SaveButton from '@components/buttons/save';
 import { assert_not_none } from '@components/utils/assert';
 import { Club, Tournament, TournamentsResponse } from '@openapi';
 import { getBaseApiUrl, getClubs } from '@services/adapter';
+import { getSportPresets } from '@services/sport_config';
 import { createTournament } from '@services/tournament';
 import dayjs from 'dayjs';
 
@@ -44,6 +46,13 @@ function GeneralTournamentForm({
   clubs: Club[];
 }) {
   const { t } = useTranslation();
+  const swrPresetsResponse = getSportPresets();
+  const presets = swrPresetsResponse.data ?? {};
+  const presetOptions = [
+    ...Object.keys(presets).map((name) => ({ value: name, label: name })),
+    { value: '__custom__', label: t('custom_sport_label') },
+  ];
+
   const form = useForm({
     initialValues: {
       start_time: dayjs(),
@@ -55,6 +64,14 @@ function GeneralTournamentForm({
       auto_assign_courts: true,
       duration_minutes: 10,
       margin_minutes: 5,
+      enable_set_scoring: false,
+      preset: null as string | null,
+      sport_name: 'Custom',
+      num_sets: 3,
+      points_per_set: null as number | null,
+      points_last_set: null as number | null,
+      min_point_difference: null as number | null,
+      max_score: null as number | null,
     },
 
     validate: {
@@ -71,6 +88,17 @@ function GeneralTournamentForm({
   return (
     <form
       onSubmit={form.onSubmit(async (values) => {
+        const sportConfig = values.enable_set_scoring
+          ? {
+              name: values.sport_name,
+              num_sets: values.num_sets,
+              points_per_set: values.points_per_set,
+              points_last_set: values.points_last_set,
+              min_point_difference: values.min_point_difference,
+              max_score: values.max_score,
+            }
+          : null;
+
         await createTournament(
           parseInt(assert_not_none(values.club_id as unknown as string), 10),
           values.name,
@@ -80,8 +108,10 @@ function GeneralTournamentForm({
           values.auto_assign_courts,
           values.start_time,
           values.duration_minutes,
-          values.margin_minutes
+          values.margin_minutes,
+          sportConfig
         );
+
         await swrTournamentsResponse.mutate();
         setOpened(false);
       })}
@@ -148,6 +178,88 @@ function GeneralTournamentForm({
           />
         </Grid.Col>
       </Grid>
+
+      <Switch
+        mt="lg"
+        label={t('enable_set_scoring_label')}
+        checked={form.values.enable_set_scoring}
+        onChange={(event) => {
+          form.setFieldValue('enable_set_scoring', event.currentTarget.checked);
+          if (!event.currentTarget.checked) {
+            form.setFieldValue('preset', null);
+          }
+        }}
+      />
+
+      {form.values.enable_set_scoring && (
+        <>
+          <Select
+            label={t('preset_label')}
+            placeholder={t('preset_placeholder')}
+            data={presetOptions}
+            mt="md"
+            value={form.values.preset}
+            onChange={(value) => {
+              form.setFieldValue('preset', value);
+              if (value && value !== '__custom__' && presets[value]) {
+                const p = presets[value];
+                form.setFieldValue('sport_name', p.name);
+                form.setFieldValue('num_sets', p.num_sets);
+                form.setFieldValue('points_per_set', p.points_per_set);
+                form.setFieldValue('points_last_set', p.points_last_set);
+                form.setFieldValue('min_point_difference', p.min_point_difference);
+                form.setFieldValue('max_score', p.max_score);
+              } else if (value === '__custom__') {
+                form.setFieldValue('sport_name', 'Custom');
+              }
+            }}
+          />
+          <TextInput label={t('sport_name_label')} mt="md" {...form.getInputProps('sport_name')} />
+          <NumberInput
+            label={t('num_sets_label')}
+            mt="md"
+            min={1}
+            max={9}
+            {...form.getInputProps('num_sets')}
+          />
+          <Grid>
+            <Grid.Col span={{ sm: 6 }}>
+              <NumberInput
+                label={t('points_per_set_label')}
+                mt="md"
+                min={1}
+                {...form.getInputProps('points_per_set')}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ sm: 6 }}>
+              <NumberInput
+                label={t('points_last_set_label')}
+                mt="md"
+                min={1}
+                {...form.getInputProps('points_last_set')}
+              />
+            </Grid.Col>
+          </Grid>
+          <Grid>
+            <Grid.Col span={{ sm: 6 }}>
+              <NumberInput
+                label={t('min_point_difference_label')}
+                mt="md"
+                min={1}
+                {...form.getInputProps('min_point_difference')}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ sm: 6 }}>
+              <NumberInput
+                label={t('max_score_label')}
+                mt="md"
+                min={1}
+                {...form.getInputProps('max_score')}
+              />
+            </Grid.Col>
+          </Grid>
+        </>
+      )}
 
       <Checkbox
         mt="md"

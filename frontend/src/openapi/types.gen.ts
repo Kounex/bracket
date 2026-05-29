@@ -332,6 +332,10 @@ export type MatchBody = {
    */
   round_id: number;
   /**
+   * Sets
+   */
+  sets: Array<MatchSetBody> | null;
+  /**
    * Stage Item Input1 Score
    */
   stage_item_input1_score: number;
@@ -394,6 +398,50 @@ export type MatchRescheduleBody = {
 };
 
 /**
+ * MatchSet
+ */
+export type MatchSet = {
+  /**
+   * Id
+   */
+  id: number;
+  /**
+   * Match Id
+   */
+  match_id: number;
+  /**
+   * Score1
+   */
+  score1: number;
+  /**
+   * Score2
+   */
+  score2: number;
+  /**
+   * Set Number
+   */
+  set_number: number;
+};
+
+/**
+ * MatchSetBody
+ */
+export type MatchSetBody = {
+  /**
+   * Score1
+   */
+  score1: number;
+  /**
+   * Score2
+   */
+  score2: number;
+  /**
+   * Set Number
+   */
+  set_number: number;
+};
+
+/**
  * MatchWithDetails
  *
  * MatchWithDetails has zero or one defined stage item inputs, but not both.
@@ -436,6 +484,10 @@ export type MatchWithDetails = {
    * Round Id
    */
   round_id: number;
+  /**
+   * Sets
+   */
+  sets: Array<MatchSet>;
   /**
    * Stage Item Input1
    */
@@ -523,6 +575,10 @@ export type MatchWithDetailsDefinitive = {
    * Round Id
    */
   round_id: number;
+  /**
+   * Sets
+   */
+  sets: Array<MatchSet>;
   /**
    * Stage Item Input1
    */
@@ -858,6 +914,81 @@ export type SinglePlayerResponse = {
  */
 export type SingleTeamResponse = {
   data: Team;
+};
+
+/**
+ * SportConfig
+ */
+export type SportConfig = {
+  /**
+   * Id
+   */
+  id: number;
+  /**
+   * Max Score
+   */
+  max_score: number | null;
+  /**
+   * Min Point Difference
+   */
+  min_point_difference: number | null;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Num Sets
+   */
+  num_sets: number;
+  /**
+   * Points Last Set
+   */
+  points_last_set: number | null;
+  /**
+   * Points Per Set
+   */
+  points_per_set: number | null;
+  /**
+   * Tournament Id
+   */
+  tournament_id: number;
+};
+
+/**
+ * SportConfigBody
+ */
+export type SportConfigBody = {
+  /**
+   * Max Score
+   */
+  max_score: number | null;
+  /**
+   * Min Point Difference
+   */
+  min_point_difference: number | null;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Num Sets
+   */
+  num_sets: number;
+  /**
+   * Points Last Set
+   */
+  points_last_set: number | null;
+  /**
+   * Points Per Set
+   */
+  points_per_set: number | null;
+};
+
+/**
+ * SportConfigResponse
+ */
+export type SportConfigResponse = {
+  data: SportConfig | null;
 };
 
 /**
@@ -1521,6 +1652,7 @@ export type TournamentBody = {
    * Players Can Be In Multiple Teams
    */
   players_can_be_in_multiple_teams: boolean;
+  sport_config: SportConfigBody | null;
   /**
    * Start Time
    */
@@ -1578,6 +1710,7 @@ export type TournamentUpdateBody = {
    * Players Can Be In Multiple Teams
    */
   players_can_be_in_multiple_teams: boolean;
+  sport_config: SportConfigBody | null;
   /**
    * Start Time
    */
@@ -1689,6 +1822,16 @@ export type UserToUpdate = {
  * ValidationError
  */
 export type ValidationError = {
+  /**
+   * Context
+   */
+  ctx?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Input
+   */
+  input?: unknown;
   /**
    * Location
    */
@@ -1844,6 +1987,27 @@ export type PingPingGetResponses = {
 };
 
 export type PingPingGetResponse = PingPingGetResponses[keyof PingPingGetResponses];
+
+export type GetSportPresetsSportPresetsGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/sport-presets';
+};
+
+export type GetSportPresetsSportPresetsGetResponses = {
+  /**
+   * Response Get Sport Presets Sport Presets Get
+   *
+   * Successful Response
+   */
+  200: {
+    [key: string]: SportConfigBody;
+  };
+};
+
+export type GetSportPresetsSportPresetsGetResponse =
+  GetSportPresetsSportPresetsGetResponses[keyof GetSportPresetsSportPresetsGetResponses];
 
 export type LoginForAccessTokenTokenPostData = {
   body: BodyLoginForAccessTokenTokenPost;
@@ -2907,6 +3071,102 @@ export type ScheduleMatchesTournamentsTournamentIdScheduleMatchesPostResponses =
 
 export type ScheduleMatchesTournamentsTournamentIdScheduleMatchesPostResponse =
   ScheduleMatchesTournamentsTournamentIdScheduleMatchesPostResponses[keyof ScheduleMatchesTournamentsTournamentIdScheduleMatchesPostResponses];
+
+export type DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Tournament Id
+     */
+    tournament_id: number;
+  };
+  query?: never;
+  url: '/tournaments/{tournament_id}/sport-config';
+};
+
+export type DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteError =
+  DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteErrors[keyof DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteErrors];
+
+export type DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  200: SuccessResponse;
+};
+
+export type DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteResponse =
+  DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteResponses[keyof DeleteTournamentSportConfigTournamentsTournamentIdSportConfigDeleteResponses];
+
+export type GetTournamentSportConfigTournamentsTournamentIdSportConfigGetData = {
+  body?: never;
+  path: {
+    /**
+     * Tournament Id
+     */
+    tournament_id: number;
+  };
+  query?: never;
+  url: '/tournaments/{tournament_id}/sport-config';
+};
+
+export type GetTournamentSportConfigTournamentsTournamentIdSportConfigGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetTournamentSportConfigTournamentsTournamentIdSportConfigGetError =
+  GetTournamentSportConfigTournamentsTournamentIdSportConfigGetErrors[keyof GetTournamentSportConfigTournamentsTournamentIdSportConfigGetErrors];
+
+export type GetTournamentSportConfigTournamentsTournamentIdSportConfigGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: SportConfigResponse;
+};
+
+export type GetTournamentSportConfigTournamentsTournamentIdSportConfigGetResponse =
+  GetTournamentSportConfigTournamentsTournamentIdSportConfigGetResponses[keyof GetTournamentSportConfigTournamentsTournamentIdSportConfigGetResponses];
+
+export type UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutData = {
+  body: SportConfigBody;
+  path: {
+    /**
+     * Tournament Id
+     */
+    tournament_id: number;
+  };
+  query?: never;
+  url: '/tournaments/{tournament_id}/sport-config';
+};
+
+export type UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutError =
+  UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutErrors[keyof UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutErrors];
+
+export type UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutResponses = {
+  /**
+   * Successful Response
+   */
+  200: SuccessResponse;
+};
+
+export type UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutResponse =
+  UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutResponses[keyof UpdateTournamentSportConfigTournamentsTournamentIdSportConfigPutResponses];
 
 export type CreateStageItemTournamentsTournamentIdStageItemsPostData = {
   body: StageItemCreateBody;
