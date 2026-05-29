@@ -42,9 +42,7 @@ unique_index_violation_error_lookup = {
     UniqueIndex.sport_configs_tournament_id_key: (
         "This tournament already has a sport configuration"
     ),
-    UniqueIndex.match_sets_match_id_set_number_key: (
-        "Duplicate set number for this match"
-    ),
+    UniqueIndex.match_sets_match_id_set_number_key: ("Duplicate set number for this match"),
 }
 
 

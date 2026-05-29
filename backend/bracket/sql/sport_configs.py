@@ -17,8 +17,14 @@ async def sql_create_sport_config(
     tournament_id: TournamentId, body: SportConfigBody
 ) -> SportConfigId:
     query = """
-        INSERT INTO sport_configs (tournament_id, name, num_sets, points_per_set, points_last_set, min_point_difference, max_score)
-        VALUES (:tournament_id, :name, :num_sets, :points_per_set, :points_last_set, :min_point_difference, :max_score)
+        INSERT INTO sport_configs (
+            tournament_id, name, num_sets, points_per_set,
+            points_last_set, min_point_difference, max_score
+        )
+        VALUES (
+            :tournament_id, :name, :num_sets, :points_per_set,
+            :points_last_set, :min_point_difference, :max_score
+        )
         RETURNING id
         """
     new_id = await database.fetch_val(
@@ -28,9 +34,7 @@ async def sql_create_sport_config(
     return SportConfigId(new_id)
 
 
-async def sql_update_sport_config(
-    tournament_id: TournamentId, body: SportConfigBody
-) -> None:
+async def sql_update_sport_config(tournament_id: TournamentId, body: SportConfigBody) -> None:
     query = """
         UPDATE sport_configs
         SET name = :name,
@@ -55,9 +59,7 @@ async def sql_delete_sport_config(tournament_id: TournamentId) -> None:
     await database.execute(query=query, values={"tournament_id": tournament_id})
 
 
-async def ensure_sport_config(
-    tournament_id: TournamentId, body: SportConfigBody | None
-) -> None:
+async def ensure_sport_config(tournament_id: TournamentId, body: SportConfigBody | None) -> None:
     """Create or update the sport config for a tournament.
 
     If body is None, delete any existing config (switch to simple mode).

@@ -44,9 +44,7 @@ def upgrade() -> None:
         sa.Column("points_per_set", sa.Integer(), nullable=True),
         sa.Column("points_last_set", sa.Integer(), nullable=True),
         sa.Column("min_point_difference", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["tournament_id"], ["tournaments.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["tournament_id"], ["tournaments.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("tournament_id"),
     )

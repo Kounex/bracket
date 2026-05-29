@@ -17,9 +17,7 @@ def derive_set_wins(sets: list[MatchSetBody]) -> tuple[int, int]:
     return wins1, wins2
 
 
-def get_max_score_for_set(
-    set_index: int, num_sets: int, sport_config: SportConfig
-) -> int | None:
+def get_max_score_for_set(set_index: int, num_sets: int, sport_config: SportConfig) -> int | None:
     """Return the max allowed score for a given set.
 
     Priority: max_score (absolute hard cap) > computed cap from target + deuce margin.
@@ -30,7 +28,8 @@ def get_max_score_for_set(
 
     is_last_set = set_index == num_sets - 1
     base = (
-        sport_config.points_last_set if is_last_set and sport_config.points_last_set is not None
+        sport_config.points_last_set
+        if is_last_set and sport_config.points_last_set is not None
         else sport_config.points_per_set
     )
     if base is None:
@@ -67,8 +66,7 @@ def validate_sets(sets: list[MatchSetBody], sport_config: SportConfig) -> None:
                 if score > cap:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Set {s.set_number}: {label} ({score}) "
-                        f"exceeds maximum of {cap}",
+                        detail=f"Set {s.set_number}: {label} ({score}) exceeds maximum of {cap}",
                     )
 
     set_numbers = [s.set_number for s in sets]
@@ -84,7 +82,6 @@ def validate_sets(sets: list[MatchSetBody], sport_config: SportConfig) -> None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                f"A side cannot win more than {sets_to_win} sets "
-                f"in best-of-{sport_config.num_sets}"
+                f"A side cannot win more than {sets_to_win} sets in best-of-{sport_config.num_sets}"
             ),
         )

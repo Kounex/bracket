@@ -36,8 +36,14 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     sport_type_enum = sa.Enum(
-        "SIMPLE", "TENNIS", "BADMINTON", "TABLE_TENNIS", "VOLLEYBALL", "PADEL",
-        name="sport_type", create_type=True,
+        "SIMPLE",
+        "TENNIS",
+        "BADMINTON",
+        "TABLE_TENNIS",
+        "VOLLEYBALL",
+        "PADEL",
+        name="sport_type",
+        create_type=True,
     )
     sport_type_enum.create(op.get_bind(), checkfirst=True)
     op.add_column(
@@ -50,7 +56,10 @@ def downgrade() -> None:
         SET sport_type = sport_configs.name::sport_type
         FROM sport_configs
         WHERE sport_configs.tournament_id = tournaments.id
-          AND sport_configs.name IN ('SIMPLE', 'TENNIS', 'BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL', 'PADEL')
+          AND sport_configs.name IN (
+              'SIMPLE', 'TENNIS', 'BADMINTON',
+              'TABLE_TENNIS', 'VOLLEYBALL', 'PADEL'
+          )
     """)
 
     op.drop_column("sport_configs", "name")

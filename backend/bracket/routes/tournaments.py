@@ -12,7 +12,6 @@ from bracket.logic.planning.matches import update_start_times_of_matches
 from bracket.logic.subscriptions import check_requirement
 from bracket.logic.tournaments import get_tournament_logo_path
 from bracket.models.db.ranking import RankingCreateBody
-from bracket.models.db.sport import SportConfigBody
 from bracket.models.db.tournament import (
     Tournament,
     TournamentBody,
