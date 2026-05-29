@@ -64,9 +64,9 @@ export function requestSucceeded(result: AxiosResponse | AxiosError) {
 }
 
 export function getBaseApiUrl() {
-  return import.meta.env.VITE_API_BASE_URL != null
-    ? import.meta.env.VITE_API_BASE_URL
-    : 'http://localhost:8400';
+  const runtimeUrl = (window as any).__BRACKET_CONFIG__?.API_BASE_URL;
+  if (runtimeUrl) return runtimeUrl;
+  return import.meta.env.VITE_API_BASE_URL ?? '';
 }
 
 export function createAxios() {

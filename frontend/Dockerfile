@@ -18,8 +18,13 @@ WORKDIR /app
 
 COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=3s --timeout=5s --retries=10 \
     CMD ["wget", "-O", "/dev/null", "http://localhost:3000"]
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
