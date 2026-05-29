@@ -30,7 +30,7 @@ jobs:
           cache-dependency-path: docs/pnpm-lock.yaml
 
       - name: Install pnpm modules
-        run: pnpm i
+        run: pnpm i --ignore-scripts
         working-directory: docs
 
       - name: Run tests

@@ -61,18 +61,15 @@ def validate_sets(sets: list[MatchSetBody], sport_config: SportConfig) -> None:
                 detail=f"Set {s.set_number}: scores cannot be negative",
             )
 
-        max_score = get_max_score_for_set(s.set_number - 1, sport_config.num_sets, sport_config)
-        if max_score is not None:
-            if s.score1 > max_score:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Set {s.set_number}: score1 ({s.score1}) exceeds maximum of {max_score}",
-                )
-            if s.score2 > max_score:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Set {s.set_number}: score2 ({s.score2}) exceeds maximum of {max_score}",
-                )
+        cap = get_max_score_for_set(s.set_number - 1, sport_config.num_sets, sport_config)
+        if cap is not None:
+            for label, score in [("score1", s.score1), ("score2", s.score2)]:
+                if score > cap:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Set {s.set_number}: {label} ({score}) "
+                        f"exceeds maximum of {cap}",
+                    )
 
     set_numbers = [s.set_number for s in sets]
     if len(set_numbers) != len(set(set_numbers)):
@@ -86,5 +83,8 @@ def validate_sets(sets: list[MatchSetBody], sport_config: SportConfig) -> None:
     if wins1 > sets_to_win or wins2 > sets_to_win:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A side cannot win more than {sets_to_win} sets in best-of-{sport_config.num_sets}",
+            detail=(
+                f"A side cannot win more than {sets_to_win} sets "
+                f"in best-of-{sport_config.num_sets}"
+            ),
         )
