@@ -14,6 +14,8 @@ class UniqueIndex(EnumAutoStr):
     ix_users_email = auto()
     stage_item_inputs_stage_item_id_team_id_key = auto()
     stage_item_inputs_stage_item_id_winner_from_stage_item_id_w_key = auto()
+    sport_configs_tournament_id_key = auto()
+    match_sets_match_id_set_number_key = auto()
 
 
 class ForeignKey(EnumAutoStr):
@@ -36,6 +38,12 @@ unique_index_violation_error_lookup = {
     ),
     UniqueIndex.stage_item_inputs_stage_item_id_winner_from_stage_item_id_w_key: (
         "This stage item winner is already assigned to another stage item"
+    ),
+    UniqueIndex.sport_configs_tournament_id_key: (
+        "This tournament already has a sport configuration"
+    ),
+    UniqueIndex.match_sets_match_id_set_number_key: (
+        "Duplicate set number for this match"
     ),
 }
 
