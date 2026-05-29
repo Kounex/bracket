@@ -68,7 +68,7 @@ class MatchWithDetails(Match):
         if values is None:
             return []
         if isinstance(values, str):
-            parsed = json.loads(values)
+            parsed: list[MatchSet] = json.loads(values)
             if parsed == [None]:
                 return []
             return parsed
