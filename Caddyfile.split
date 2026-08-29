@@ -1,0 +1,17 @@
+# Split-deployment Caddyfile: serves the SPA and proxies /api to the backend container.
+# Bind-mounted into the frontend image by docker-compose.yml (the image's built-in
+# Caddyfile only serves static files).
+:3000 {
+    # config.js carries runtime config and must never be cached (browser/CDN)
+    header /config.js Cache-Control "no-store"
+
+    handle /api/* {
+        reverse_proxy backend:8400
+    }
+
+    handle {
+        root * /app/dist
+        try_files {path} /index.html
+        file_server
+    }
+}

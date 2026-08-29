@@ -1,3 +1,10 @@
+# Quickstart template: split deployment with the published frontend and backend images.
+# The frontend (Caddy) serves the SPA on port 8400 and proxies /api to the backend —
+# see Caddyfile.split, which is bind-mounted into the frontend container.
+#
+# For anything beyond a local quickstart, set JWT_SECRET and ADMIN_PASSWORD explicitly
+# and use ENVIRONMENT: PRODUCTION (see the "Security considerations" section in AGENTS.md).
+
 networks:
   bracket_lan:
     driver: bridge
@@ -7,33 +14,49 @@ volumes:
   bracket_static_data:
 
 services:
-  bracket:
-    container_name: bracket
+  frontend:
+    container_name: bracket-frontend
+    image: ghcr.io/kounex/bracket-frontend:v3.1.1
+    depends_on:
+      - backend
+    environment:
+      API_BASE_URL: /api
+    networks:
+      - bracket_lan
+    ports:
+      - "8400:3000"
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile.split:/etc/caddy/Caddyfile:ro
+    stop_grace_period: 15s
+
+  backend:
+    container_name: bracket-backend
+    image: ghcr.io/kounex/bracket-backend:v3.1.1
     depends_on:
       - postgres
     environment:
       ENVIRONMENT: DEVELOPMENT
       CORS_ORIGINS: http://localhost:8400
       PG_DSN: postgresql://bracket_dev:bracket_dev@postgres:5432/bracket_dev
-      SERVE_FRONTEND: true
-      API_PREFIX: '/api'
-    image: ghcr.io/evroon/bracket
+      API_PREFIX: /api
     networks:
       - bracket_lan
-    ports:
-      - 8400:8400
     restart: unless-stopped
     volumes:
       - bracket_static_data:/app/static
+    stop_grace_period: 15s
 
   postgres:
+    container_name: bracket-postgres
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: bracket_dev
-      POSTGRES_PASSWORD: bracket_dev
       POSTGRES_USER: bracket_dev
-    image: postgres
+      POSTGRES_PASSWORD: bracket_dev
     networks:
       - bracket_lan
-    restart: always
+    restart: unless-stopped
     volumes:
-      - bracket_pg_data:/var/lib/postgresql
+      - bracket_pg_data:/var/lib/postgresql/data
+    stop_grace_period: 15s

@@ -246,8 +246,10 @@ All backend commands run from `backend/` (with uv); all frontend commands from `
 
 ### Docker / production
 
-- `docker compose up -d` (root `docker-compose.yml`) — quickstart: pulls `ghcr.io/evroon/bracket`
-  plus Postgres; app on port 8400 with `SERVE_FRONTEND=true`.
+- `docker compose up -d` (root `docker-compose.yml`) — quickstart (split): pulls
+  `ghcr.io/kounex/bracket-frontend` + `ghcr.io/kounex/bracket-backend` plus Postgres; Caddy
+  (`Caddyfile.split`, bind-mounted into the frontend container) serves the app on port 8400 and
+  proxies `/api` to the backend.
 - Root `Dockerfile` — multi-stage: builds the frontend with pnpm, then a Python image where the
   backend serves both the API and the built frontend from `/app/frontend-dist`.
 - Migrations run automatically on app startup when `AUTO_RUN_MIGRATIONS=true`
@@ -263,7 +265,7 @@ Deployment modes:
 |------|--------|-------|------------|
 | Local dev | None | 8400 | "" (empty) |
 | Docker combined | `ghcr.io/evroon/bracket` | 8400 | /api |
-| Docker split | `-backend` + `-frontend` | 8400 + 3000 | "" |
+| Docker split | `-backend` + `-frontend` | 8400 (frontend→3000) | /api (proxied by Caddy) |
 
 ## API contract (OpenAPI)
 
@@ -292,8 +294,9 @@ Frontend usage convention: import types via `import { Tournament } from '@openap
 calls with `createAxios()` from `@services/adapter` (reads) and `@services/{entity}` (writes).
 Do NOT use generated SDK functions or create duplicate hand-written types.
 
-API prefix: local dev uses `API_PREFIX=""` (paths like `/tournaments`); combined Docker uses
-`API_PREFIX=/api` (paths like `/api/tournaments`). The frontend `VITE_API_BASE_URL` must match.
+API prefix: local dev uses `API_PREFIX=""` (paths like `/tournaments`); Docker deployments use
+`API_PREFIX=/api` (paths like `/api/tournaments`) — in split mode the frontend's Caddy proxies
+`/api/*` to the backend. The frontend `VITE_API_BASE_URL` must match.
 
 ## Code style guidelines
 
