@@ -1,9 +1,7 @@
----
-description: React/TypeScript frontend conventions — components, data fetching, state, i18n
-globs: frontend/**
----
-
 # Frontend Conventions
+
+React/TypeScript frontend conventions — components, data fetching, state, i18n.
+Applies to everything under `frontend/`. See the root `AGENTS.md` for project-wide guidance.
 
 ## Stack
 

@@ -1,9 +1,7 @@
----
-description: Python/FastAPI backend conventions — layering, routes, SQL, models
-globs: backend/**
----
-
 # Backend Conventions
+
+Python/FastAPI backend conventions — layering, routes, SQL, models.
+Applies to everything under `backend/`. See the root `AGENTS.md` for project-wide guidance.
 
 ## Layer Boundaries
 

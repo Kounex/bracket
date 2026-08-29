@@ -27,8 +27,9 @@ Present to the user:
 
 ### Step 2: Ask for version
 
-Use AskQuestion to let the user pick or type a version. Suggest the next logical versions based
-on the current tag (patch, minor, major). Version must match `v*` pattern (e.g. `v3.0.0`).
+Ask the user to pick or type a version (multiple-choice question if your tool supports it).
+Suggest the next logical versions based on the current tag (patch, minor, major). Version must
+match `v*` pattern (e.g. `v3.0.0`).
 
 Validate:
 - Must start with `v` followed by semver (e.g. `v1.2.3`, `v2.0.0-rc1`)
