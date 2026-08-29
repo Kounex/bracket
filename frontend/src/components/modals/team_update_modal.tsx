@@ -87,6 +87,12 @@ export default function TeamUpdateModal({
             label={t('active_team_checkbox_label')}
             {...form.getInputProps('active', { type: 'checkbox' })}
           />
+          <Checkbox
+            mt="xs"
+            label={t('exclusive_membership_checkbox_label')}
+            checked={exclusiveMembership}
+            onChange={(event) => setExclusiveMembership(event.currentTarget.checked)}
+          />
 
           <MultiSelect
             data={players.map((p) => ({ value: `${p.id}`, label: p.name }))}
@@ -97,13 +103,6 @@ export default function TeamUpdateModal({
             mt={12}
             limit={25}
             {...form.getInputProps('player_ids')}
-          />
-
-          <Checkbox
-            mt="md"
-            label={t('exclusive_membership_checkbox_label')}
-            checked={exclusiveMembership}
-            onChange={(event) => setExclusiveMembership(event.currentTarget.checked)}
           />
 
           <Fieldset legend={t('logo_settings_title')} mt={12} radius="md">

@@ -92,6 +92,12 @@ function SingleTeamTab({
         label={t('active_teams_checkbox_label')}
         {...form.getInputProps('active', { type: 'checkbox' })}
       />
+      <Checkbox
+        mt="xs"
+        label={t('exclusive_membership_checkbox_label')}
+        checked={exclusiveMembership}
+        onChange={(event) => setExclusiveMembership(event.currentTarget.checked)}
+      />
 
       <MultiSelect
         data={players.map((p) => ({ value: `${p.id}`, label: p.name }))}
@@ -102,11 +108,6 @@ function SingleTeamTab({
         mt={12}
         limit={25}
         {...form.getInputProps('player_ids')}
-      />
-      <Checkbox
-        label={t('exclusive_membership_checkbox_label')}
-        checked={exclusiveMembership}
-        onChange={(event) => setExclusiveMembership(event.currentTarget.checked)}
       />
       <Button fullWidth style={{ marginTop: 10 }} color="green" type="submit">
         {t('save_button')}
