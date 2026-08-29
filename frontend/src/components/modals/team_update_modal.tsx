@@ -50,10 +50,6 @@ export default function TeamUpdateModal({
       active: team.active,
       player_ids: team.players.map((player) => `${player.id}`),
     },
-
-    validate: {
-      name: (value) => (value.length > 0 ? null : t('too_short_name_validation')),
-    },
   });
 
   return (
@@ -75,9 +71,8 @@ export default function TeamUpdateModal({
           })}
         >
           <TextInput
-            withAsterisk
             label={t('name_input_label')}
-            placeholder={t('team_name_input_placeholder')}
+            placeholder={t('team_name_auto_input_placeholder')}
             {...form.getInputProps('name')}
           />
 

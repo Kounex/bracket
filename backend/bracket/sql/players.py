@@ -48,6 +48,22 @@ async def get_all_players_in_tournament(
     return [Player.model_validate(x) for x in result]
 
 
+async def get_players_by_id(player_ids: set[PlayerId], tournament_id: TournamentId) -> list[Player]:
+    if len(player_ids) < 1:
+        return []
+
+    query = """
+        SELECT *
+        FROM players
+        WHERE id = any(:player_ids)
+        AND tournament_id = :tournament_id
+    """
+    result = await database.fetch_all(
+        query=query, values={"player_ids": player_ids, "tournament_id": tournament_id}
+    )
+    return [Player.model_validate(player) for player in result]
+
+
 async def get_player_by_id(player_id: PlayerId, tournament_id: TournamentId) -> Player | None:
     query = """
         SELECT *

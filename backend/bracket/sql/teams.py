@@ -3,7 +3,7 @@ from typing import cast
 from bracket.database import database
 from bracket.logic.ranking.statistics import TeamStatistics
 from bracket.models.db.team import FullTeamWithPlayers, Team
-from bracket.utils.id_types import StageItemInputId, TeamId, TournamentId
+from bracket.utils.id_types import PlayerId, StageItemInputId, TeamId, TournamentId
 from bracket.utils.pagination import PaginationTeams
 from bracket.utils.types import dict_without_none
 
@@ -115,6 +115,38 @@ async def update_team_stats(
             "losses": team_statistics.losses,
             "points": float(team_statistics.points),
         },
+    )
+
+
+async def get_team_names(tournament_id: TournamentId) -> set[str]:
+    query = "SELECT name FROM teams WHERE tournament_id = :tournament_id"
+    result = await database.fetch_all(query=query, values={"tournament_id": tournament_id})
+    return {str(row["name"]) for row in result}
+
+
+async def get_team_ids_for_player(player_id: PlayerId) -> list[TeamId]:
+    query = "SELECT team_id FROM players_x_teams WHERE player_id = :player_id"
+    result = await database.fetch_all(query=query, values={"player_id": player_id})
+    return [TeamId(cast("int", row["team_id"])) for row in result]
+
+
+async def get_teams_with_members_for_player(
+    tournament_id: TournamentId, player_id: PlayerId
+) -> list[FullTeamWithPlayers]:
+    result: list[FullTeamWithPlayers] = []
+    for team_id in await get_team_ids_for_player(player_id):
+        result.extend(await get_teams_with_members(tournament_id, team_id=team_id))
+    return result
+
+
+async def sql_update_team_name(tournament_id: TournamentId, team_id: TeamId, name: str) -> None:
+    query = """
+        UPDATE teams
+        SET name = :name
+        WHERE id = :team_id AND tournament_id = :tournament_id
+    """
+    await database.execute(
+        query=query, values={"name": name, "team_id": team_id, "tournament_id": tournament_id}
     )
 
 

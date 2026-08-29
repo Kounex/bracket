@@ -10,7 +10,7 @@ from heliclockter import datetime_utc
 from bracket.config import config
 from bracket.database import database
 from bracket.logic.subscriptions import check_requirement
-from bracket.logic.teams import get_team_logo_path
+from bracket.logic.teams import build_auto_team_name, get_team_logo_path, resolve_team_name
 from bracket.models.db.player import PlayerBody
 from bracket.models.db.team import (
     FullTeamWithPlayers,
@@ -97,15 +97,16 @@ async def update_team_by_id(
     team_body: TeamBody,
     _: UserPublic = Depends(user_authenticated_for_tournament),
     __: Tournament = Depends(disallow_archived_tournament),
-    team: Team = Depends(team_dependency),
+    team: FullTeamWithPlayers = Depends(team_with_players_dependency),
 ) -> SingleTeamResponse:
     await check_foreign_keys_belong_to_tournament(team_body, tournament_id)
 
+    name = await resolve_team_name(tournament_id, team_body.name, team_body.player_ids, team=team)
     await database.execute(
         query=teams.update().where(
             (teams.c.id == team.id) & (teams.c.tournament_id == tournament_id)
         ),
-        values=team_body.model_dump(exclude={"player_ids"}),
+        values=team_body.model_dump(exclude={"player_ids", "name"}) | {"name": name},
     )
     await update_team_members(team.id, tournament_id, team_body.player_ids)
 
@@ -191,10 +192,12 @@ async def create_team(
     existing_teams = await get_teams_with_members(tournament_id)
     check_requirement(existing_teams, user, "max_teams")
 
+    name = await resolve_team_name(tournament_id, team_to_insert.name, team_to_insert.player_ids)
     last_record_id = await database.execute(
         query=teams.insert(),
         values=TeamInsertable(
-            **team_to_insert.model_dump(exclude={"player_ids"}),
+            **team_to_insert.model_dump(exclude={"player_ids", "name"}),
+            name=name,
             created=datetime_utc.now(),
             tournament_id=tournament_id,
         ).model_dump(),
@@ -228,11 +231,14 @@ async def create_multiple_teams(
     check_requirement(existing_players, user, "max_players", additions=len(players))
 
     async with database.transaction():
+        existing_names = {team.name for team in existing_teams}
         for team_name, players in teams_and_players:
+            name = team_name.strip() or build_auto_team_name(players, existing_names)
+            existing_names.add(name)
             await database.execute(
                 query=teams.insert(),
                 values=TeamInsertable(
-                    name=team_name,
+                    name=name,
                     active=team_body.active,
                     created=datetime_utc.now(),
                     tournament_id=tournament_id,

@@ -2,13 +2,24 @@ import pytest
 
 from bracket.database import database
 from bracket.models.db.player import Player
-from bracket.schema import players
+from bracket.models.db.team import Team
+from bracket.schema import players, teams
 from bracket.utils.db import fetch_one_parsed_certain
-from bracket.utils.dummy_records import DUMMY_MOCK_TIME, DUMMY_PLAYER1, DUMMY_TEAM1
+from bracket.utils.dummy_records import (
+    DUMMY_MOCK_TIME,
+    DUMMY_PLAYER1,
+    DUMMY_PLAYER2,
+    DUMMY_TEAM1,
+)
 from bracket.utils.http import HTTPMethod
 from tests.integration_tests.api.shared import SUCCESS_RESPONSE, send_tournament_request
 from tests.integration_tests.models import AuthContext
-from tests.integration_tests.sql import assert_row_count_and_clear, inserted_player, inserted_team
+from tests.integration_tests.sql import (
+    assert_row_count_and_clear,
+    inserted_player,
+    inserted_player_in_team,
+    inserted_team,
+)
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -104,3 +115,68 @@ async def test_update_player(
             assert response["data"]["name"] == body["name"]
 
             await assert_row_count_and_clear(players, 1)
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_rename_player_rederives_auto_team_name(
+    startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
+) -> None:
+    tournament_id = auth_context.tournament.id
+    async with inserted_team(
+        DUMMY_TEAM1.model_copy(
+            update={"tournament_id": tournament_id, "name": "Player 01 / Player 02"}
+        )
+    ) as team_inserted:
+        async with (
+            inserted_player_in_team(
+                DUMMY_PLAYER1.model_copy(update={"tournament_id": tournament_id}),
+                team_inserted.id,
+            ) as player_1,
+            inserted_player_in_team(
+                DUMMY_PLAYER2.model_copy(update={"tournament_id": tournament_id}),
+                team_inserted.id,
+            ),
+        ):
+            response = await send_tournament_request(
+                HTTPMethod.PUT,
+                f"players/{player_1.id}",
+                auth_context,
+                json={"name": "Renamed", "active": True},
+            )
+            assert response["data"]["name"] == "Renamed"
+
+            updated_team = await fetch_one_parsed_certain(
+                database, Team, query=teams.select().where(teams.c.id == team_inserted.id)
+            )
+            assert updated_team.name == "Player 02 / Renamed"
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_delete_player_rederives_auto_team_name(
+    startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
+) -> None:
+    tournament_id = auth_context.tournament.id
+    async with inserted_team(
+        DUMMY_TEAM1.model_copy(
+            update={"tournament_id": tournament_id, "name": "Player 01 / Player 02"}
+        )
+    ) as team_inserted:
+        async with inserted_player_in_team(
+            DUMMY_PLAYER1.model_copy(update={"tournament_id": tournament_id}),
+            team_inserted.id,
+        ) as player_1:
+            async with inserted_player_in_team(
+                DUMMY_PLAYER2.model_copy(update={"tournament_id": tournament_id}),
+                team_inserted.id,
+            ):
+                assert (
+                    await send_tournament_request(
+                        HTTPMethod.DELETE, f"players/{player_1.id}", auth_context
+                    )
+                    == SUCCESS_RESPONSE
+                )
+
+            updated_team = await fetch_one_parsed_certain(
+                database, Team, query=teams.select().where(teams.c.id == team_inserted.id)
+            )
+            assert updated_team.name == "Player 02"

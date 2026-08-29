@@ -2712,8 +2712,8 @@
             "type": "boolean"
           },
           "name": {
+            "default": "",
             "maxLength": 30,
-            "minLength": 1,
             "title": "Name",
             "type": "string"
           },

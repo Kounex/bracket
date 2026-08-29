@@ -242,6 +242,7 @@
     "team_count_select_elimination_placeholder": "2, 4, 8 etc.",
     "team_member_select_placeholder": "Pick team members for this team",
     "team_member_select_title": "Team members",
+    "team_name_auto_input_placeholder": "Optional — auto-generated from players if empty",
     "team_name_input_placeholder": "Best Team Ever",
     "team_title": "Team",
     "teams_spotlight_description": "View, add or delete teams",

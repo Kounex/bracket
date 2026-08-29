@@ -71,9 +71,6 @@ function SingleTeamTab({
       active: true,
       player_ids: [],
     },
-    validate: {
-      name: (value) => (value.length > 0 ? null : t('too_short_name_validation')),
-    },
   });
   return (
     <form
@@ -84,9 +81,8 @@ function SingleTeamTab({
       })}
     >
       <TextInput
-        withAsterisk
         label={t('name_input_label')}
-        placeholder={t('team_name_input_placeholder')}
+        placeholder={t('team_name_auto_input_placeholder')}
         {...form.getInputProps('name')}
       />
 

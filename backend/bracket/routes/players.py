@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from bracket.config import config
 from bracket.database import database
 from bracket.logic.subscriptions import check_requirement
+from bracket.logic.teams import rederive_auto_team_names_for_player
 from bracket.models.db.player import Player, PlayerBody, PlayerMultiBody
 from bracket.models.db.tournament import Tournament
 from bracket.models.db.user import UserPublic
@@ -21,6 +22,7 @@ from bracket.sql.players import (
     insert_player,
     sql_delete_player,
 )
+from bracket.sql.teams import get_teams_with_members_for_player
 from bracket.utils.db import fetch_one_parsed
 from bracket.utils.id_types import PlayerId, TournamentId
 from bracket.utils.pagination import PaginationPlayers
@@ -54,12 +56,23 @@ async def update_player_by_id(
     _: UserPublic = Depends(user_authenticated_for_tournament),
     __: Tournament = Depends(disallow_archived_tournament),
 ) -> SinglePlayerResponse:
+    teams_of_player = await get_teams_with_members_for_player(tournament_id, player_id)
+    old_name = next(
+        (p.name for team in teams_of_player for p in team.players if p.id == player_id), None
+    )
+
     await database.execute(
         query=players.update().where(
             (players.c.id == player_id) & (players.c.tournament_id == tournament_id)
         ),
         values=player_body.model_dump(),
     )
+
+    if old_name is not None and old_name != player_body.name:
+        await rederive_auto_team_names_for_player(
+            tournament_id, player_id, player_body.name, teams_of_player
+        )
+
     return SinglePlayerResponse(
         data=assert_some(
             await fetch_one_parsed(
@@ -80,7 +93,9 @@ async def delete_player(
     _: UserPublic = Depends(user_authenticated_for_tournament),
     __: Tournament = Depends(disallow_archived_tournament),
 ) -> SuccessResponse:
+    teams_of_player = await get_teams_with_members_for_player(tournament_id, player_id)
     await sql_delete_player(tournament_id, player_id)
+    await rederive_auto_team_names_for_player(tournament_id, player_id, None, teams_of_player)
     return SuccessResponse()
 
 
