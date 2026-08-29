@@ -40,8 +40,14 @@ export default function TeamUpdateModal({
   swrTeamsResponse: SWRResponse<TeamsWithPlayersResponse>;
 }) {
   const { t } = useTranslation();
-  const { data } = getPlayers(tournament_id, false);
-  const players: Player[] = data != null ? data.data.players : [];
+  const [exclusiveMembership, setExclusiveMembership] = useState(true);
+  const { data } = getPlayers(tournament_id, exclusiveMembership);
+  const fetchedPlayers: Player[] = data != null ? data.data.players : [];
+  // When exclusive membership is on, the API omits players already in a team — merge back
+  // this team's current members so they stay visible/selected in the dropdown.
+  const players: Player[] = (
+    exclusiveMembership ? [...fetchedPlayers, ...team.players] : fetchedPlayers
+  ).sort((p1, p2) => p1.name.localeCompare(p2.name));
   const [opened, setOpened] = useState(false);
 
   const form = useForm({
@@ -91,6 +97,13 @@ export default function TeamUpdateModal({
             mt={12}
             limit={25}
             {...form.getInputProps('player_ids')}
+          />
+
+          <Checkbox
+            mt="md"
+            label={t('exclusive_membership_checkbox_label')}
+            checked={exclusiveMembership}
+            onChange={(event) => setExclusiveMembership(event.currentTarget.checked)}
           />
 
           <Fieldset legend={t('logo_settings_title')} mt={12} radius="md">

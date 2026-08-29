@@ -108,6 +108,7 @@
     "edit_team_title": "Edit Team",
     "edit_tournament_button": "Edit Tournament",
     "elo_difference": "ELO Difference",
+    "exclusive_membership_checkbox_label": "Members can only be in one team",
     "elo_input_label": "Max ELO difference",
     "elo_score": "ELO score",
     "email_input_label": "Email Address",

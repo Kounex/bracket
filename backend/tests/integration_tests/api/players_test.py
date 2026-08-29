@@ -23,6 +23,30 @@ from tests.integration_tests.sql import (
 
 
 @pytest.mark.asyncio(loop_scope="session")
+async def test_players_not_in_team_filter(
+    startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
+) -> None:
+    tournament_id = auth_context.tournament.id
+    async with inserted_team(
+        DUMMY_TEAM1.model_copy(update={"tournament_id": tournament_id})
+    ) as team_inserted:
+        async with (
+            inserted_player_in_team(
+                DUMMY_PLAYER1.model_copy(update={"tournament_id": tournament_id}),
+                team_inserted.id,
+            ),
+            inserted_player(
+                DUMMY_PLAYER2.model_copy(update={"tournament_id": tournament_id})
+            ) as player_2,
+        ):
+            response = await send_tournament_request(
+                HTTPMethod.GET, "players?not_in_team=true", auth_context, {}
+            )
+            assert response["data"]["count"] == 1
+            assert [p["name"] for p in response["data"]["players"]] == [player_2.name]
+
+
+@pytest.mark.asyncio(loop_scope="session")
 async def test_players_endpoint(
     startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
 ) -> None:

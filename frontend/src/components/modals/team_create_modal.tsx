@@ -63,7 +63,8 @@ function SingleTeamTab({
   setOpened: any;
 }) {
   const { t } = useTranslation();
-  const { data } = getPlayers(tournament_id, false);
+  const [exclusiveMembership, setExclusiveMembership] = useState(true);
+  const { data } = getPlayers(tournament_id, exclusiveMembership);
   const players: Player[] = data != null ? data.data.players : [];
   const form = useForm({
     initialValues: {
@@ -101,6 +102,11 @@ function SingleTeamTab({
         mt={12}
         limit={25}
         {...form.getInputProps('player_ids')}
+      />
+      <Checkbox
+        label={t('exclusive_membership_checkbox_label')}
+        checked={exclusiveMembership}
+        onChange={(event) => setExclusiveMembership(event.currentTarget.checked)}
       />
       <Button fullWidth style={{ marginTop: 10 }} color="green" type="submit">
         {t('save_button')}

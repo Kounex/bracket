@@ -17,7 +17,9 @@ async def get_all_players_in_tournament(
     not_in_team: bool = False,
     pagination: PaginationPlayers | None = None,
 ) -> list[Player]:
-    not_in_team_filter = "AND players.team_id IS NULL" if not_in_team else ""
+    not_in_team_filter = (
+        "AND players.id NOT IN (SELECT player_id FROM players_x_teams)" if not_in_team else ""
+    )
     limit_filter = "LIMIT :limit" if pagination is not None and pagination.limit is not None else ""
     offset_filter = (
         "OFFSET :offset" if pagination is not None and pagination.offset is not None else ""
@@ -82,7 +84,9 @@ async def get_player_count(
     *,
     not_in_team: bool = False,
 ) -> int:
-    not_in_team_filter = "AND players.team_id IS NULL" if not_in_team else ""
+    not_in_team_filter = (
+        "AND players.id NOT IN (SELECT player_id FROM players_x_teams)" if not_in_team else ""
+    )
     query = f"""
         SELECT count(*)
         FROM players
