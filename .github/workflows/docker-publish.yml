@@ -11,13 +11,20 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_FRONTEND: ${{ github.repository }}-frontend
-  IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
-  IMAGE_NAME_COMBINED: ${{ github.repository }}
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: frontend
+            context: frontend
+            file: frontend/Dockerfile
+          - name: backend
+            context: backend
+            file: backend/Dockerfile
     permissions:
       contents: read
       packages: write
@@ -39,50 +46,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for frontend Docker image
-        id: meta_frontend
+      - name: Extract metadata (tags, labels) for ${{ matrix.image.name }} Docker image
+        id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image.name }}
 
-      - name: Extract metadata (tags, labels) for backend Docker image
-        id: meta_backend
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
-
-      - name: Extract metadata (tags, labels) for combined Docker image
-        id: meta_combined
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_COMBINED }}
-
-      - name: Build and push frontend Docker image
+      - name: Build and push ${{ matrix.image.name }} Docker image
         uses: docker/build-push-action@v7
         with:
-          context: frontend
+          context: ${{ matrix.image.context }}
           push: true
-          file: frontend/Dockerfile
-          tags: ${{ steps.meta_frontend.outputs.tags }}
-          labels: ${{ steps.meta_frontend.outputs.labels }}
+          file: ${{ matrix.image.file }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64/v8
-
-      - name: Build and push backend Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: backend
-          push: true
-          file: backend/Dockerfile
-          tags: ${{ steps.meta_backend.outputs.tags }}
-          labels: ${{ steps.meta_backend.outputs.labels }}
-          platforms: linux/amd64,linux/arm64/v8
-
-      - name: Build and push combined Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./
-          push: true
-          file: Dockerfile
-          tags: ${{ steps.meta_combined.outputs.tags }}
-          labels: ${{ steps.meta_combined.outputs.labels }}
-          platforms: linux/amd64,linux/arm64/v8
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}

@@ -6,7 +6,7 @@ description: Release a new version of the bracket app by creating and pushing a 
 # Release Version
 
 Creates a semver git tag and pushes it to trigger the `docker-publish.yml` GitHub Actions workflow,
-which builds and pushes three Docker images (frontend, backend, combined) to `ghcr.io`.
+which builds and pushes two Docker images (frontend, backend) to `ghcr.io` in parallel matrix jobs.
 
 ## Workflow
 
@@ -63,7 +63,6 @@ git push origin <version>
 After pushing, show:
 - The GitHub Actions URL: `https://github.com/Kounex/bracket/actions`
 - The expected GHCR images that will be published:
-  - `ghcr.io/kounex/bracket:<version>`
   - `ghcr.io/kounex/bracket-frontend:<version>`
   - `ghcr.io/kounex/bracket-backend:<version>`
 
