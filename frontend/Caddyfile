@@ -1,4 +1,7 @@
 :3000 {
+    # config.js carries runtime config and must never be cached (browser/CDN)
+    header /config.js Cache-Control "no-store"
+
     root * /app/dist
     file_server
     try_files {path} /index.html

@@ -160,6 +160,19 @@ for tag, router in routers.items():
     assert router.prefix == config.api_prefix, f"Prefix not set on router with tag `{tag}`"
     app.include_router(router, tags=[tag])
 
+
+@app.get("/config.js", include_in_schema=False)
+async def frontend_config() -> Response:
+    # Runtime config consumed by the frontend (frontend/src/services/adapter.tsx). Serving it
+    # from the backend makes the combined Docker image point the frontend at the API prefix
+    # (the split frontend image generates this file in its docker-entrypoint.sh instead).
+    return Response(
+        f'window.__BRACKET_CONFIG__ = {{ API_BASE_URL: "{config.api_prefix}" }};',
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 if config.serve_frontend:
     msg = "API_PREFIX env var must be set (e.g. `/api`) when serving the frontend"
     assert config.api_prefix.startswith("/"), msg
