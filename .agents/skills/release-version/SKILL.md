@@ -70,7 +70,7 @@ After pushing, show:
 
 - Only push tags to `origin` (your fork), never to `upstream`
 - The `docker-publish.yml` workflow triggers on any `v*` tag push
-- Images are built for `linux/amd64` and `linux/arm64/v8`
+- Images are built for `linux/amd64` only (QEMU arm64 frontend builds hang; all targets are x86_64)
 - GHCR auth uses the repo's `GITHUB_TOKEN` — no extra secrets needed
 - If the workflow fails, check Actions tab; the tag can be deleted and recreated:
   ```bash

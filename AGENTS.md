@@ -415,7 +415,8 @@ for this flow in `.agents/skills/release-version/`.
   - `docs-build.yml` — docs build checks (paths: `docs/**`).
   - `docker-build.yml` — builds all 3 Dockerfiles on PRs (no push).
   - `docker-publish.yml` — tags matching `v*` trigger GHCR publish of the frontend and backend
-    images (parallel matrix jobs, GHA build cache, linux/amd64 + linux/arm64). The combined image
+    images (parallel matrix jobs, GHA build cache, linux/amd64 only — QEMU arm64 builds of the
+    frontend hang, and all target hosts are x86_64). The combined image
     (root `Dockerfile`) is not published by this workflow.
 - Releases are cut by pushing a `v*` tag (see "Git workflow and releases"); production runs from
   the published Docker image (see `docker-compose.yml` and the deployment docs in
