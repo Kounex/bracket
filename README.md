@@ -77,13 +77,13 @@ your data will de deleted.
 # Quickstart
 To quickly run bracket to see how it works, clone it and run `docker compose up`:
 ```bash
-git clone git@github.com:evroon/bracket.git
+git clone git@github.com:Kounex/bracket.git
 cd bracket
 sudo docker compose up -d
 ```
 
-This will start the backend and frontend of Bracket, as well as a postgres instance. You should now
-be able to view bracket at http://localhost:3000. You can log in with the following credentials:
+This will start the frontend, backend and a postgres instance using the published Docker images.
+You should now be able to view bracket at http://localhost:8400. You can log in with the following credentials:
 
 - Username: `test@example.org`
 - Password: `aeGhoe1ahng2Aezai0Dei6Aih6dieHoo`.
@@ -104,7 +104,9 @@ Read the [configuration docs](https://docs.bracketapp.nl/docs/running-bracket/co
 Bracket's backend is configured using `.env` files (`prod.env` for production, `dev.env` for development etc.).
 But you can also configure Bracket using environment variables directly, for example by specifying them in the `docker-compose.yml`.
 
-The frontend doesn't can be configured by environment variables as well, as well as `.env` files using Vite's way of loading environment variables.
+The frontend is configured via environment variables too: in Docker they are applied at container
+start (written to `config.js`), for local development they are loaded from `.env` files using
+Vite's way of loading environment variables.
 
 # Running Bracket in production
 Read the [deployment docs](https://docs.bracketapp.nl/docs/deployment) for how to deploy Bracket and run it in production.

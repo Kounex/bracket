@@ -44,7 +44,7 @@ job "bracket-backend" {
       }
 
       config {
-        image   = "ghcr.io/evroon/bracket-backend"
+        image   = "ghcr.io/kounex/bracket-backend:v3.1.1"
         ports   = ["uvicorn"]
         command = "uv"
         args    = [
@@ -77,27 +77,28 @@ job "bracket-frontend" {
     count = 1
 
     network {
-      port "nextjs" { }
+      port "caddy" {
+        to = 3000
+      }
     }
 
     service {
       provider = "nomad"
-      port     = "nextjs"
+      port     = "caddy"
     }
 
-    task "api" {
+    task "web" {
       driver = "docker"
 
       env {
-        VITE_API_BASE_URL = "https://my.bracketdomain.com"
-        VITE_HCAPTCHA_SITE_KEY = "xxxxx"
-        NODE_ENV = "production"
+        # Applied at container start (written to config.js); point it at your backend,
+        # e.g. "https://api.my-bracketdomain.com/api" or "/api" behind a reverse proxy.
+        API_BASE_URL = "https://my.bracketdomain.com/api"
       }
 
       config {
-        image   = "ghcr.io/evroon/bracket-frontend"
-        ports   = ["nextjs"]
-        args = ["pnpm", "start", "-p", "${NOMAD_PORT_nextjs}"]
+        image   = "ghcr.io/kounex/bracket-frontend:v3.1.1"
+        ports   = ["caddy"]
       }
 
       resources {

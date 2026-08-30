@@ -7,67 +7,90 @@ import { Callout } from 'nextra/components'
 
 This section describes how to deploy Bracket (frontend and backend) to docker using docker-compose.
 
+The frontend and backend run as separate containers. The frontend (Caddy) serves the web app and
+proxies `/api` requests to the backend, so everything is same-origin: no CORS configuration and
+no absolute backend URL needed.
+
 ## 1. Install Docker and docker compose
 
 First, make sure you have docker and docker compose installed.
 
-## 2. Store the docker-compose.yml file
+## 2. Store the docker-compose.yml and Caddyfile.split files
 
-Then, store the following YAML in a file called `docker-compose.yml` in an empty directory.
-
-The highlighted lines will be discussed in the next steps.
+Store the following YAML in a file called `docker-compose.yml` in an empty directory.
+(These files are also included in the repository root, so cloning the repo works too.)
 
 ```yaml
 services:
     bracket-frontend:
-        image: ghcr.io/evroon/bracket-frontend
+        image: ghcr.io/kounex/bracket-frontend:v3.1.1
         container_name: bracket-frontend
         ports:
-            - "3000:3000"
+            - "8400:3000"
         environment:
-            NODE_ENV: "production"
-            VITE_API_BASE_URL: "http://your-site.com:8400"
-            VITE_HCAPTCHA_SITE_KEY: "10000000-ffff-ffff-ffff-000000000001"
+            API_BASE_URL: /api
+        volumes:
+            - ./Caddyfile.split:/etc/caddy/Caddyfile:ro
         restart: unless-stopped
+        depends_on:
+            - bracket-backend
 
     bracket-backend:
-        image: ghcr.io/evroon/bracket-backend
+        image: ghcr.io/kounex/bracket-backend:v3.1.1
         container_name: bracket-backend
-        ports:
-            - "8400:8400"
         environment:
             ENVIRONMENT: "PRODUCTION"
             PG_DSN: "postgresql://bracket_prod:bracket_prod@postgres:5432/bracket_prod"
             CORS_ORIGINS: https://your-site.com
             JWT_SECRET: change_me
+            API_PREFIX: /api
         volumes:
-            - ./backend/static:/app/static
+            - bracket_static_data:/app/static
         restart: unless-stopped
         depends_on:
           - postgres
 
     postgres:
-        image: postgres
-        restart: always
+        image: postgres:16-alpine
+        restart: unless-stopped
         environment:
           POSTGRES_DB: bracket_prod
           POSTGRES_USER: bracket_prod
           POSTGRES_PASSWORD: bracket_prod
         volumes:
-          - ./postgres:/var/lib/postgresql
+          - bracket_pg_data:/var/lib/postgresql/data
+
+volumes:
+    bracket_pg_data:
+    bracket_static_data:
 ```
 
+Then store the following in a file called `Caddyfile.split` in the same directory. It serves the
+static frontend files and forwards `/api` requests to the backend container:
+
+```text
+:3000 {
+    # config.js carries runtime config and must never be cached (browser/CDN)
+    header /config.js Cache-Control "no-store"
+
+    handle /api/* {
+        reverse_proxy bracket-backend:8400
+    }
+
+    handle {
+        root * /app/dist
+        try_files {path} /index.html
+        file_server
+    }
+}
+```
+
+<Callout>
+    Images are published with semver tags only (e.g. `v3.1.1`); there is no `latest` tag.
+    Check the [releases page](https://github.com/Kounex/bracket/releases) for the newest version.
+</Callout>
+
 ## 3. Set up the environment variables
-
-Replace the lines that are highlighted in the code block from the previous step.
-
-Replace the following values for `bracket-frontend`:
-
-- `VITE_API_BASE_URL`: The address of your backend. The frontend will send
-  requests to this address.
-- `VITE_HCAPTCHA_SITE_KEY`: Either leave empty to disable it or
-  [signup for hCaptcha](https://dashboard.hcaptcha.com/signup), create a site and
-  put the site key here
 
 Replace the following values for `bracket-backend`:
 
@@ -76,20 +99,24 @@ Replace the following values for `bracket-backend`:
   can only come from your actual frontend
 - `JWT_SECRET`: Generate a secret to create JWTs using `openssl rand -hex 32`
 
+For `bracket-frontend`, keep `API_BASE_URL` set to `/api` — this is a relative, same-origin
+address that the Caddy proxy forwards to the backend, so it works on any hostname.
+It is applied at container start (written to `config.js`), not baked into the image.
+
 <Callout>
     Note that your `docker-compose.yml` file now contains secrets.
     If you want a more secure setup, you can store secrets in separate files on the host and
     load them via [docker secrets](https://docs.docker.com/compose/use-secrets/).
 </Callout>
 
-## 4. Update volume bindings
+## 4. Access the application
 
-Bracket needs two volume bindings: for the backend and for the database.
+Run it using `docker compose up -d` in the same directory as the files.
+Access Bracket at `http://localhost:8400`.
 
-Update the two volume binding paths to point to a directory where you want to store the
-persistent data.
+## Alternative: separate backend address
 
-## 5. Access the application
-
-Run it using `docker compose up -d` in the same directory as the file.
-Access Bracket at `http://localhost:3000`.
+If you prefer to expose the backend on its own address instead of proxying through the frontend,
+drop the `Caddyfile.split` volume mount, set `API_BASE_URL` of the frontend to the absolute
+backend address (e.g. `https://api.your-site.com/api`) and add the frontend's origin to
+`CORS_ORIGINS` of the backend. The backend listens on port `8400` inside its container.

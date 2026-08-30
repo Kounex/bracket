@@ -7,11 +7,12 @@ title: FAQ
 
 ## I ran Bracket with the default `docker-compose.yml` but I can't connect to the backend?
 
-This is likely because you are trying to access Bracket on a different address than
-`http://localhost:3000` in the browser. In that case, two things need to be changed:
+The default `docker-compose.yml` proxies API requests through the frontend's Caddy server
+(see `Caddyfile.split`), so the setup works from any address out of the box — as long as you
+access Bracket through the frontend's port (`8400`), not the backend's directly.
 
-- Change `VITE_API_BASE_URL` to the address of the backend, e.g `https://api.example.org`.
-- You will also need to update `CORS_ORIGINS` to the address of the frontend, e.g.
-  `https://app.example.org`.
+If you run the frontend without the proxy Caddyfile, or with an `API_BASE_URL` pointing at a
+different address, you will also need to update `CORS_ORIGINS` of the backend to the address of
+the frontend, e.g. `https://app.example.org`.
 
 Please consult [configuration docs](configuration.mdx) for more information.
