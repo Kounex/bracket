@@ -19,7 +19,9 @@ const config = {
     ],
     ignores: [
         "node_modules",
-        "static"
+        "static",
+        // agent working documents (specs/plans), not site content
+        "superpowers"
     ],
     customRules: [relativeLinksRule],
 }
