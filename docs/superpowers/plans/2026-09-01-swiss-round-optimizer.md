@@ -601,8 +601,14 @@ Add imports: `PairingMode` from `bracket.models.db.stage_item`,
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd backend && uv run pytest tests/integration_tests/api/auto_scheduling_matches_test.py::test_start_next_round_competitive_pairs_winners -v`
-Expected: FAIL — round 2 pairings are greedy/rotation-based, not winners-vs-winners (or 422 from `pairing_mode` in `StageItemWithInputsCreate` if run before Task 1 — Task 1 must be done first).
+Run:
+
+```bash
+cd backend && uv run pytest tests/integration_tests/api/auto_scheduling_matches_test.py::test_start_next_round_competitive_pairs_winners -v
+```
+
+Expected: FAIL — round 2 pairings are greedy/rotation-based, not winners-vs-winners (or 422 from
+`pairing_mode` in `StageItemWithInputsCreate` if run before Task 1 — Task 1 must be done first).
 
 - [ ] **Step 3: Rework `start_next_round` to use the optimizer**
 
@@ -731,12 +737,26 @@ linter flags them.
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd backend && uv run pytest tests/integration_tests/api/auto_scheduling_matches_test.py tests/integration_tests/api/stage_items_test.py tests/unit_tests/round_optimizer_test.py tests/unit_tests/swiss_test.py -v`
+Run:
+
+```bash
+cd backend && uv run pytest tests/integration_tests/api/auto_scheduling_matches_test.py \
+  tests/integration_tests/api/stage_items_test.py tests/unit_tests/round_optimizer_test.py \
+  tests/unit_tests/swiss_test.py -v
+```
+
 Expected: PASS (existing `swiss_test.py` and `test_start_next_round` must stay green)
 
 - [ ] **Step 5: Full backend suite + linters**
 
-Run: `cd backend && uv run pytest && uv run ruff format --check bracket/ tests/ && uv run ruff check bracket/ tests/ && uv run mypy bracket/ && uv run pylint bracket/ && uv run vulture bracket/`
+Run:
+
+```bash
+cd backend && uv run pytest && uv run ruff format --check bracket/ tests/ && \
+  uv run ruff check bracket/ tests/ && uv run mypy bracket/ && uv run pylint bracket/ && \
+  uv run vulture bracket/
+```
+
 Expected: all clean
 
 - [ ] **Step 6: Commit**
