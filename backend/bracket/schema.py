@@ -61,6 +61,7 @@ stage_items = Table(
     Column("stage_id", BigInteger, ForeignKey("stages.id"), index=True, nullable=False),
     Column("team_count", Integer, nullable=False),
     Column("ranking_id", BigInteger, ForeignKey("rankings.id"), nullable=False),
+    Column("pairing_mode", Text, nullable=False, server_default="SOCIAL"),
     Column(
         "type",
         Enum(

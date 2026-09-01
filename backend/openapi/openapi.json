@@ -1278,6 +1278,14 @@
         "title": "PaginatedTeams",
         "type": "object"
       },
+      "PairingMode": {
+        "enum": [
+          "SOCIAL",
+          "COMPETITIVE"
+        ],
+        "title": "PairingMode",
+        "type": "string"
+      },
       "Player": {
         "properties": {
           "active": {
@@ -1931,6 +1939,10 @@
             ],
             "title": "Name"
           },
+          "pairing_mode": {
+            "$ref": "#/components/schemas/PairingMode",
+            "default": "SOCIAL"
+          },
           "ranking_id": {
             "anyOf": [
               {
@@ -1961,7 +1973,8 @@
           "name",
           "type",
           "team_count",
-          "ranking_id"
+          "ranking_id",
+          "pairing_mode"
         ],
         "title": "StageItemCreateBody",
         "type": "object"
@@ -2354,6 +2367,9 @@
             "title": "Name",
             "type": "string"
           },
+          "pairing_mode": {
+            "$ref": "#/components/schemas/PairingMode"
+          },
           "ranking_id": {
             "title": "Ranking Id",
             "type": "integer"
@@ -2361,7 +2377,8 @@
         },
         "required": [
           "name",
-          "ranking_id"
+          "ranking_id",
+          "pairing_mode"
         ],
         "title": "StageItemUpdateBody",
         "type": "object"
@@ -2397,6 +2414,10 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "pairing_mode": {
+            "$ref": "#/components/schemas/PairingMode",
+            "default": "SOCIAL"
           },
           "ranking_id": {
             "anyOf": [
@@ -2441,6 +2462,7 @@
           "type",
           "team_count",
           "ranking_id",
+          "pairing_mode",
           "id",
           "rounds",
           "inputs",

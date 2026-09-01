@@ -1,9 +1,11 @@
 import pytest
 
-from bracket.models.db.stage_item import StageType
+from bracket.models.db.stage_item import PairingMode, StageType
 from bracket.models.db.stage_item_inputs import StageItemInputCreateBodyFinal
 from bracket.schema import matches, rounds, stage_items, stages
+from bracket.sql.shared import sql_delete_stage_item_with_foreign_keys
 from bracket.sql.stage_items import get_stage_item
+from bracket.sql.stages import get_full_tournament_details
 from bracket.utils.dummy_records import (
     DUMMY_STAGE1,
     DUMMY_STAGE2,
@@ -92,7 +94,11 @@ async def test_delete_stage_item(
 async def test_update_stage_item(
     startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
 ) -> None:
-    body = {"name": "Optimus", "ranking_id": auth_context.ranking.id}
+    body = {
+        "name": "Optimus",
+        "ranking_id": auth_context.ranking.id,
+        "pairing_mode": PairingMode.SOCIAL.value,
+    }
     async with (
         inserted_stage(
             DUMMY_STAGE1.model_copy(update={"tournament_id": auth_context.tournament.id})
@@ -115,3 +121,48 @@ async def test_update_stage_item(
             auth_context.tournament.id, stage_item_inserted.id
         )
         assert updated_stage_item.name == body["name"]
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_stage_item_pairing_mode(
+    startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
+) -> None:
+    async with inserted_stage(
+        DUMMY_STAGE2.model_copy(update={"tournament_id": auth_context.tournament.id})
+    ) as stage_inserted:
+        # Create without pairing_mode -> defaults to SOCIAL
+        assert (
+            await send_tournament_request(
+                HTTPMethod.POST,
+                "stage_items",
+                auth_context,
+                json={
+                    "type": StageType.SWISS.value,
+                    "team_count": 4,
+                    "stage_id": stage_inserted.id,
+                },
+            )
+            == SUCCESS_RESPONSE
+        )
+        [stage] = await get_full_tournament_details(auth_context.tournament.id)
+        stage_item = max(stage.stage_items, key=lambda si: si.id)
+        assert stage_item.pairing_mode is PairingMode.SOCIAL
+
+        # Update to COMPETITIVE
+        assert (
+            await send_tournament_request(
+                HTTPMethod.PUT,
+                f"stage_items/{stage_item.id}",
+                auth_context,
+                json={
+                    "name": stage_item.name,
+                    "ranking_id": stage_item.ranking_id,
+                    "pairing_mode": PairingMode.COMPETITIVE.value,
+                },
+            )
+            == SUCCESS_RESPONSE
+        )
+        [stage] = await get_full_tournament_details(auth_context.tournament.id)
+        assert max(stage.stage_items, key=lambda si: si.id).pairing_mode is PairingMode.COMPETITIVE
+
+        await sql_delete_stage_item_with_foreign_keys(stage_item.id)

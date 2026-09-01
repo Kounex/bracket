@@ -654,6 +654,11 @@ export type PaginatedTeams = {
 };
 
 /**
+ * PairingMode
+ */
+export type PairingMode = 'SOCIAL' | 'COMPETITIVE';
+
+/**
  * Player
  */
 export type Player = {
@@ -1019,6 +1024,7 @@ export type StageItemCreateBody = {
    * Name
    */
   name: string | null;
+  pairing_mode: PairingMode;
   /**
    * Ranking Id
    */
@@ -1287,6 +1293,7 @@ export type StageItemUpdateBody = {
    * Name
    */
   name: string;
+  pairing_mode: PairingMode;
   /**
    * Ranking Id
    */
@@ -1313,6 +1320,7 @@ export type StageItemWithRounds = {
    * Name
    */
   name: string;
+  pairing_mode: PairingMode;
   /**
    * Ranking Id
    */

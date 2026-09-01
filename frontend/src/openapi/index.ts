@@ -295,6 +295,7 @@ export type {
   MatchWithDetailsDefinitive,
   PaginatedPlayers,
   PaginatedTeams,
+  PairingMode,
   PingPingGetData,
   PingPingGetResponse,
   PingPingGetResponses,

@@ -20,6 +20,11 @@ class StageType(EnumAutoStr):
         return self in [StageType.SWISS]
 
 
+class PairingMode(EnumAutoStr):
+    SOCIAL = auto()
+    COMPETITIVE = auto()
+
+
 class StageItemInsertable(BaseModelORM):
     stage_id: StageId
     name: str
@@ -27,6 +32,7 @@ class StageItemInsertable(BaseModelORM):
     type: StageType
     team_count: int = Field(ge=2, le=64)
     ranking_id: RankingId | None = None
+    pairing_mode: PairingMode = PairingMode.SOCIAL
 
 
 class StageItem(StageItemInsertable):
@@ -36,6 +42,7 @@ class StageItem(StageItemInsertable):
 class StageItemUpdateBody(BaseModelORM):
     name: str
     ranking_id: RankingId
+    pairing_mode: PairingMode
 
 
 class StageItemActivateNextBody(BaseModelORM):
@@ -48,6 +55,7 @@ class StageItemCreateBody(BaseModelORM):
     type: StageType
     team_count: int = Field(ge=2, le=64)
     ranking_id: RankingId | None = None
+    pairing_mode: PairingMode = PairingMode.SOCIAL
 
     def get_name_or_default_name(self) -> str:
         return (
