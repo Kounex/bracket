@@ -199,3 +199,47 @@ async def test_start_next_round_competitive_pairs_winners(
         }
 
         await sql_delete_stage_item_with_foreign_keys(stage_item.id)
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_start_next_round_rejects_non_swiss(
+    startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
+) -> None:
+    async with (
+        inserted_court(
+            DUMMY_COURT1.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ),
+        inserted_stage(
+            DUMMY_STAGE2.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ) as stage_inserted_1,
+        inserted_team(
+            DUMMY_TEAM1.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ) as team_1,
+        inserted_team(
+            DUMMY_TEAM1.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ) as team_2,
+    ):
+        tournament_id = auth_context.tournament.id
+        stage_item = await sql_create_stage_item_with_inputs(
+            tournament_id,
+            StageItemWithInputsCreate(
+                stage_id=stage_inserted_1.id,
+                name=DUMMY_STAGE_ITEM1.name,
+                team_count=2,
+                type=StageType.SINGLE_ELIMINATION,
+                inputs=[
+                    StageItemInputCreateBodyFinal(slot=1, team_id=team_1.id),
+                    StageItemInputCreateBodyFinal(slot=2, team_id=team_2.id),
+                ],
+            ),
+        )
+        try:
+            response = await send_tournament_request(
+                HTTPMethod.POST,
+                f"stage_items/{stage_item.id}/start_next_round",
+                auth_context,
+                json={},
+            )
+            assert response == {"detail": "Expected stage item to be of type SWISS."}
+        finally:
+            await sql_delete_stage_item_with_foreign_keys(stage_item.id)

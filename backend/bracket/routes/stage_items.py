@@ -161,6 +161,11 @@ async def start_next_round(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="There is already a draft round in this stage item, please delete it first",
         )
+    if stage_item.type is not StageType.SWISS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Expected stage item to be of type SWISS.",
+        )
 
     eligible_inputs = [
         input_
