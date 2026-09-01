@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SWRResponse } from 'swr';
 
+import { PairingModeSwitch } from '@components/forms/pairing_mode_switch';
 import { Translator } from '@components/utils/types';
 import {
   StageItemInputOptionsResponse,
@@ -173,6 +174,7 @@ interface FormValues {
   type: 'ROUND_ROBIN' | 'SWISS' | 'SINGLE_ELIMINATION';
   team_count_round_robin: number;
   team_count_elimination: number;
+  pairing_mode_competitive: boolean;
 }
 export function CreateStageItemModal({
   tournament,
@@ -189,7 +191,12 @@ export function CreateStageItemModal({
   const [opened, setOpened] = useState(false);
 
   const form = useForm<FormValues>({
-    initialValues: { type: 'ROUND_ROBIN', team_count_round_robin: 4, team_count_elimination: 2 },
+    initialValues: {
+      type: 'ROUND_ROBIN',
+      team_count_round_robin: 4,
+      team_count_elimination: 2,
+      pairing_mode_competitive: false,
+    },
     validate: {
       team_count_round_robin: (value) => (value >= 2 ? null : t('at_least_two_team_validation')),
       team_count_elimination: (value) => (value >= 2 ? null : t('at_least_two_team_validation')),
@@ -214,7 +221,13 @@ export function CreateStageItemModal({
       >
         <form
           onSubmit={form.onSubmit(async (values) => {
-            await createStageItem(tournament.id, stage.id, values.type, getTeamCount(values));
+            await createStageItem(
+              tournament.id,
+              stage.id,
+              values.type,
+              getTeamCount(values),
+              values.pairing_mode_competitive ? 'COMPETITIVE' : 'SOCIAL'
+            );
             await swrStagesResponse.mutate();
             await swrAvailableInputsResponse.mutate();
             setOpened(false);
@@ -229,6 +242,7 @@ export function CreateStageItemModal({
           />
           <Divider mt="1rem" />
           <TeamCountInput form={form} />
+          {form.values.type === 'SWISS' && <PairingModeSwitch form={form} />}
 
           <Button fullWidth mt="1.5rem" color="green" type="submit">
             {t('create_stage_item_button')}

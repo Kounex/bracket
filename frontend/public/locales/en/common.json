@@ -187,6 +187,8 @@
     "number_required": "Includes number",
     "only_recommended_input_group_label": "Only show teams that played less matches",
     "only_recommended_radio_label": "Only recommended",
+    "pairing_mode_switch_label": "Competitive pairing",
+    "pairing_mode_tooltip": "Off (social): everyone plays about equally often and opponents rotate fairly. On (competitive): teams with similar records face each other — winners vs winners — and weaker teams sit out more often.",
     "password_input_label": "Password",
     "password_input_placeholder": "Your password",
     "plan_next_round_button": "Plan next round",
