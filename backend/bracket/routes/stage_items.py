@@ -18,6 +18,11 @@ from bracket.logic.ranking.elimination import (
 from bracket.logic.scheduling.builder import (
     build_matches_for_stage_item,
 )
+from bracket.logic.scheduling.ladder_teams import (
+    get_number_of_inputs_played_per_input,
+    get_previous_matches_hashes,
+)
+from bracket.logic.scheduling.round_optimizer import get_optimal_round_pairings
 from bracket.logic.scheduling.upcoming_matches import get_upcoming_matches_for_swiss
 from bracket.logic.subscriptions import check_requirement
 from bracket.models.db.match import MatchCreateBody, MatchFilter, SuggestedMatch
@@ -28,6 +33,7 @@ from bracket.models.db.stage_item import (
     StageItemUpdateBody,
     StageType,
 )
+from bracket.models.db.stage_item_inputs import StageItemInputFinal
 from bracket.models.db.tournament import Tournament
 from bracket.models.db.user import UserPublic
 from bracket.models.db.util import StageItemWithRounds
@@ -156,18 +162,43 @@ async def start_next_round(
             detail="There is already a draft round in this stage item, please delete it first",
         )
 
+    eligible_inputs = [
+        input_
+        for input_ in stage_item.inputs
+        if isinstance(input_, StageItemInputFinal) and input_.team.active
+    ]
+    previous_match_hashes = get_previous_matches_hashes(stage_item.rounds)
+    times_played_per_input = get_number_of_inputs_played_per_input(stage_item.rounds, frozenset())
+    courts = await get_all_courts_in_tournament(tournament_id)
+
+    pairings = get_optimal_round_pairings(
+        eligible_inputs,
+        times_played_per_input,
+        len(courts),
+        previous_match_hashes,
+        stage_item.pairing_mode,
+    )
+    if pairings is not None and len(pairings) < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No more matches to schedule, all combinations of teams have been added already",
+        )
+
     match_filter = MatchFilter(
         elo_diff_threshold=elo_diff_threshold,
         only_recommended=only_recommended,
         limit=1,
         iterations=iterations,
     )
-    all_matches_to_schedule = get_upcoming_matches_for_swiss(match_filter, stage_item)
-    if len(all_matches_to_schedule) < 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No more matches to schedule, all combinations of teams have been added already",
-        )
+    if pairings is None:
+        # Too many teams for exact optimization: keep the old greedy path for this stage item.
+        if len(get_upcoming_matches_for_swiss(match_filter, stage_item)) < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "No more matches to schedule, all combinations of teams have been added already"
+                ),
+            )
 
     stages = await get_full_tournament_details(tournament_id)
     existing_rounds = [
@@ -188,36 +219,52 @@ async def start_next_round(
     )
     draft_round = await get_round_by_id(tournament_id, round_id)
     tournament = await sql_get_tournament(tournament_id)
-    courts = await get_all_courts_in_tournament(tournament_id)
 
-    limit = len(courts) - len(draft_round.matches)
-    for ___ in range(limit):
-        stage_item = await get_stage_item(tournament_id, stage_item_id)
-        draft_round = next(round_ for round_ in stage_item.rounds if round_.is_draft)
-        all_matches_to_schedule = get_upcoming_matches_for_swiss(
-            match_filter, stage_item, draft_round
-        )
-        if len(all_matches_to_schedule) < 1:
-            break
+    if pairings is None:
+        # Greedy fallback, one match at a time.
+        limit = len(courts) - len(draft_round.matches)
+        for ___ in range(limit):
+            stage_item = await get_stage_item(tournament_id, stage_item_id)
+            draft_round = next(round_ for round_ in stage_item.rounds if round_.is_draft)
+            all_matches_to_schedule = get_upcoming_matches_for_swiss(
+                match_filter, stage_item, draft_round
+            )
+            if len(all_matches_to_schedule) < 1:
+                break
 
-        match = all_matches_to_schedule[0]
-        assert isinstance(match, SuggestedMatch)
-
-        assert draft_round.id and match.stage_item_input1.id and match.stage_item_input2.id
-        await sql_create_match(
-            MatchCreateBody(
-                round_id=draft_round.id,
-                stage_item_input1_id=match.stage_item_input1.id,
-                stage_item_input2_id=match.stage_item_input2.id,
-                court_id=None,
-                stage_item_input1_winner_from_match_id=None,
-                stage_item_input2_winner_from_match_id=None,
-                duration_minutes=tournament.duration_minutes,
-                margin_minutes=tournament.margin_minutes,
-                custom_duration_minutes=None,
-                custom_margin_minutes=None,
-            ),
-        )
+            match = all_matches_to_schedule[0]
+            assert isinstance(match, SuggestedMatch)
+            assert draft_round.id and match.stage_item_input1.id and match.stage_item_input2.id
+            await sql_create_match(
+                MatchCreateBody(
+                    round_id=draft_round.id,
+                    stage_item_input1_id=match.stage_item_input1.id,
+                    stage_item_input2_id=match.stage_item_input2.id,
+                    court_id=None,
+                    stage_item_input1_winner_from_match_id=None,
+                    stage_item_input2_winner_from_match_id=None,
+                    duration_minutes=tournament.duration_minutes,
+                    margin_minutes=tournament.margin_minutes,
+                    custom_duration_minutes=None,
+                    custom_margin_minutes=None,
+                ),
+            )
+    else:
+        for input1, input2 in pairings:
+            await sql_create_match(
+                MatchCreateBody(
+                    round_id=draft_round.id,
+                    stage_item_input1_id=input1.id,
+                    stage_item_input2_id=input2.id,
+                    court_id=None,
+                    stage_item_input1_winner_from_match_id=None,
+                    stage_item_input2_winner_from_match_id=None,
+                    duration_minutes=tournament.duration_minutes,
+                    margin_minutes=tournament.margin_minutes,
+                    custom_duration_minutes=None,
+                    custom_margin_minutes=None,
+                ),
+            )
 
     draft_round = await get_round_by_id(tournament_id, round_id)
     try:

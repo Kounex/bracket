@@ -40,8 +40,8 @@ def get_previous_matches_hashes(rounds: list[RoundWithMatches]) -> frozenset[str
 
 def get_number_of_inputs_played_per_input(
     rounds: list[RoundWithMatches], excluded_input_ids: frozenset[StageItemInputId]
-) -> dict[int, int]:
-    result: dict[int, int] = defaultdict(int)
+) -> dict[StageItemInputId, int]:
+    result: dict[StageItemInputId, int] = defaultdict(int)
 
     for round_ in rounds:
         for match in round_.matches:
