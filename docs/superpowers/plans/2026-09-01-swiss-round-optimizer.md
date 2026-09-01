@@ -753,15 +753,16 @@ git commit -m "feat: use exact round optimizer in Swiss start_next_round"
 **Files:**
 
 - Create: `frontend/src/components/forms/pairing_mode_switch.tsx`
-- Modify: `frontend/src/components/modals/create_stage_item.tsx` (form + submit + conditional render)
-- Modify: `frontend/src/components/modals/update_stage_item.tsx` (form + submit + conditional render)
+- Modify: `frontend/src/components/modals/create_stage_item.tsx` (form, submit, conditional)
+- Modify: `frontend/src/components/modals/update_stage_item.tsx` (form, submit, conditional)
 - Modify: `frontend/src/services/stage_item.tsx`
 - Modify: `frontend/public/locales/en/common.json` (3 new keys)
 
 **Interfaces:**
 
 - Consumes: regenerated `StageItemWithRounds.pairing_mode` etc. from Task 1 Step 8.
-- Produces: UI control; form field `pairing_mode_competitive: boolean`; API payload values `'COMPETITIVE'` / `'SOCIAL'`.
+- Produces: UI control; form field `pairing_mode_competitive: boolean`; API payload values
+  `'COMPETITIVE'` / `'SOCIAL'`.
 
 - [ ] **Step 1: Create the switch component**
 
@@ -898,7 +899,9 @@ await updateStageItem(
 {stageItem.type === 'SWISS' && <PairingModeSwitch form={form} />}
 ```
 
-- Add imports: `PairingModeSwitch` as above. (`stageItem.type` / `stageItem.pairing_mode` come from the regenerated OpenAPI types; if `StageItemWithRounds` types `type` as an enum, compare against the enum value instead of the string literal.)
+- Add imports: `PairingModeSwitch` as above. (`stageItem.type` / `stageItem.pairing_mode` come from
+  the regenerated OpenAPI types; if `StageItemWithRounds` types `type` as an enum, compare against
+  the enum value instead of the string literal.)
 
 - [ ] **Step 6: Frontend checks**
 
