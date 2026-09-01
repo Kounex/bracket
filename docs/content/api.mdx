@@ -14,3 +14,9 @@ choose whatever you like best:
 
 - [ReDoc](https://api.bracketapp.nl/redoc)
 - [Swagger UI](https://api.bracketapp.nl/docs)
+
+Swiss stage items have a `pairing_mode` of `SOCIAL` (default) or `COMPETITIVE`.
+`POST /tournaments/{id}/stage_items` defaults to `SOCIAL` if you omit it.
+`PUT /tournaments/{id}/stage_items/{stage_item_id}` accepts `pairing_mode` but keeps
+the stored value when the field is omitted, so older clients that only send `name`
+and `ranking_id` still work.

@@ -70,6 +70,24 @@ from bracket.utils.id_types import StageItemId, TournamentId
 router = APIRouter(prefix=config.api_prefix)
 
 
+def _validate_swiss_start_next_round(stage_item: StageItemWithRounds, courts_count: int) -> None:
+    if get_draft_round(stage_item) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="There is already a draft round in this stage item, please delete it first",
+        )
+    if stage_item.type is not StageType.SWISS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Expected stage item to be of type SWISS.",
+        )
+    if courts_count < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No courts configured. Add at least one court before scheduling a round.",
+        )
+
+
 @router.delete(
     "/tournaments/{tournament_id}/stage_items/{stage_item_id}", response_model=SuccessResponse
 )
@@ -123,7 +141,7 @@ async def update_stage_item(
 
     query = """
         UPDATE stage_items
-        SET name = :name, pairing_mode = :pairing_mode
+        SET name = :name, pairing_mode = COALESCE(:pairing_mode, pairing_mode)
         WHERE stage_items.id = :stage_item_id
     """
     await database.execute(
@@ -131,7 +149,9 @@ async def update_stage_item(
         values={
             "stage_item_id": stage_item_id,
             "name": stage_item_body.name,
-            "pairing_mode": stage_item_body.pairing_mode.value,
+            "pairing_mode": (
+                None if stage_item_body.pairing_mode is None else stage_item_body.pairing_mode.value
+            ),
         },
     )
     await recalculate_ranking_for_stage_item(tournament_id, stage_item)
@@ -155,17 +175,14 @@ async def start_next_round(
     only_recommended: bool = False,
     _: Tournament = Depends(disallow_archived_tournament),
 ) -> SuccessResponse:
-    draft_round = get_draft_round(stage_item)
-    if draft_round is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="There is already a draft round in this stage item, please delete it first",
-        )
-    if stage_item.type is not StageType.SWISS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Expected stage item to be of type SWISS.",
-        )
+    """Schedule the next Swiss round.
+
+    ``elo_diff_threshold``, ``only_recommended``, and ``iterations`` apply only when the
+    stage item has more than 20 teams (greedy fallback). Smaller Swiss stage items use the
+    exact round optimizer, which ignores these parameters so a round can always be filled.
+    """
+    courts = await get_all_courts_in_tournament(tournament_id)
+    _validate_swiss_start_next_round(stage_item, len(courts))
 
     eligible_inputs = [
         input_
@@ -174,7 +191,6 @@ async def start_next_round(
     ]
     previous_match_hashes = get_previous_matches_hashes(stage_item.rounds)
     times_played_per_input = get_number_of_inputs_played_per_input(stage_item.rounds, frozenset())
-    courts = await get_all_courts_in_tournament(tournament_id)
 
     pairings = get_optimal_round_pairings(
         eligible_inputs,

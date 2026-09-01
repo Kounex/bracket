@@ -147,58 +147,59 @@ async def test_start_next_round_competitive_pairs_winners(
             ),
         )
 
-        # Round 1
-        response = await send_tournament_request(
-            HTTPMethod.POST,
-            f"stage_items/{stage_item.id}/start_next_round",
-            auth_context,
-            json={},
-        )
-        assert response == SUCCESS_RESPONSE
-
-        [stage] = await get_full_tournament_details(tournament_id)
-        round_1 = stage.stage_items[0].rounds[0]
-        assert len(round_1.matches) == 2
-
-        # team_1 and team_3 win their matches
-        for match in round_1.matches:
-            assert isinstance(match, MatchWithDetailsDefinitive)
-            winner_is_input1 = match.stage_item_input1.team_id in (team_1.id, team_3.id)
-            update = (
-                {"stage_item_input1_score": 1}
-                if winner_is_input1
-                else {"stage_item_input2_score": 1}
+        try:
+            # Round 1
+            response = await send_tournament_request(
+                HTTPMethod.POST,
+                f"stage_items/{stage_item.id}/start_next_round",
+                auth_context,
+                json={},
             )
-            await sql_update_match(
-                match.id,
-                MatchBody(**match.model_copy(update=update).model_dump()),
-                auth_context.tournament,
+            assert response == SUCCESS_RESPONSE
+
+            [stage] = await get_full_tournament_details(tournament_id)
+            round_1 = stage.stage_items[0].rounds[0]
+            assert len(round_1.matches) == 2
+
+            # team_1 and team_3 win their matches
+            for match in round_1.matches:
+                assert isinstance(match, MatchWithDetailsDefinitive)
+                winner_is_input1 = match.stage_item_input1.team_id in (team_1.id, team_3.id)
+                update = (
+                    {"stage_item_input1_score": 1}
+                    if winner_is_input1
+                    else {"stage_item_input2_score": 1}
+                )
+                await sql_update_match(
+                    match.id,
+                    MatchBody(**match.model_copy(update=update).model_dump()),
+                    auth_context.tournament,
+                )
+
+            # Round 2: winners must play winners, losers play losers
+            response = await send_tournament_request(
+                HTTPMethod.POST,
+                f"stage_items/{stage_item.id}/start_next_round",
+                auth_context,
+                json={},
             )
+            assert response == SUCCESS_RESPONSE
 
-        # Round 2: winners must play winners, losers play losers
-        response = await send_tournament_request(
-            HTTPMethod.POST,
-            f"stage_items/{stage_item.id}/start_next_round",
-            auth_context,
-            json={},
-        )
-        assert response == SUCCESS_RESPONSE
-
-        [stage] = await get_full_tournament_details(tournament_id)
-        rounds = stage.stage_items[0].rounds
-        assert len(rounds) == 2
-        round_2 = max(rounds, key=lambda r: r.id)
-        pair_sets = {
-            frozenset((m.stage_item_input1.team_id, m.stage_item_input2.team_id))
-            for m in round_2.matches
-            if isinstance(m, MatchWithDetailsDefinitive)
-        }
-        assert pair_sets == {
-            frozenset((team_1.id, team_3.id)),
-            frozenset((team_2.id, team_4.id)),
-        }
-
-        await sql_delete_stage_item_with_foreign_keys(stage_item.id)
+            [stage] = await get_full_tournament_details(tournament_id)
+            rounds = stage.stage_items[0].rounds
+            assert len(rounds) == 2
+            round_2 = max(rounds, key=lambda r: r.id)
+            pair_sets = {
+                frozenset((m.stage_item_input1.team_id, m.stage_item_input2.team_id))
+                for m in round_2.matches
+                if isinstance(m, MatchWithDetailsDefinitive)
+            }
+            assert pair_sets == {
+                frozenset((team_1.id, team_3.id)),
+                frozenset((team_2.id, team_4.id)),
+            }
+        finally:
+            await sql_delete_stage_item_with_foreign_keys(stage_item.id)
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -241,5 +242,48 @@ async def test_start_next_round_rejects_non_swiss(
                 json={},
             )
             assert response == {"detail": "Expected stage item to be of type SWISS."}
+        finally:
+            await sql_delete_stage_item_with_foreign_keys(stage_item.id)
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_start_next_round_requires_courts(
+    startup_and_shutdown_uvicorn_server: None, auth_context: AuthContext
+) -> None:
+    async with (
+        inserted_stage(
+            DUMMY_STAGE2.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ) as stage_inserted_1,
+        inserted_team(
+            DUMMY_TEAM1.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ) as team_1,
+        inserted_team(
+            DUMMY_TEAM1.model_copy(update={"tournament_id": auth_context.tournament.id})
+        ) as team_2,
+    ):
+        tournament_id = auth_context.tournament.id
+        stage_item = await sql_create_stage_item_with_inputs(
+            tournament_id,
+            StageItemWithInputsCreate(
+                stage_id=stage_inserted_1.id,
+                name=DUMMY_STAGE_ITEM1.name,
+                team_count=2,
+                type=StageType.SWISS,
+                inputs=[
+                    StageItemInputCreateBodyFinal(slot=1, team_id=team_1.id),
+                    StageItemInputCreateBodyFinal(slot=2, team_id=team_2.id),
+                ],
+            ),
+        )
+        try:
+            response = await send_tournament_request(
+                HTTPMethod.POST,
+                f"stage_items/{stage_item.id}/start_next_round",
+                auth_context,
+                json={},
+            )
+            assert response == {
+                "detail": "No courts configured. Add at least one court before scheduling a round."
+            }
         finally:
             await sql_delete_stage_item_with_foreign_keys(stage_item.id)

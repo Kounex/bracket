@@ -226,7 +226,7 @@ export function CreateStageItemModal({
               stage.id,
               values.type,
               getTeamCount(values),
-              values.pairing_mode_competitive ? 'COMPETITIVE' : 'SOCIAL'
+              values.type === 'SWISS' && values.pairing_mode_competitive ? 'COMPETITIVE' : 'SOCIAL'
             );
             await swrStagesResponse.mutate();
             await swrAvailableInputsResponse.mutate();
@@ -238,6 +238,9 @@ export function CreateStageItemModal({
             selectedType={form.values.type}
             setSelectedType={(_type) => {
               form.setFieldValue('type', _type);
+              if (_type !== 'SWISS') {
+                form.setFieldValue('pairing_mode_competitive', false);
+              }
             }}
           />
           <Divider mt="1rem" />

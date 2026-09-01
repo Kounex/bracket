@@ -42,7 +42,7 @@ class StageItem(StageItemInsertable):
 class StageItemUpdateBody(BaseModelORM):
     name: str
     ranking_id: RankingId
-    pairing_mode: PairingMode
+    pairing_mode: PairingMode | None = None
 
 
 class StageItemActivateNextBody(BaseModelORM):

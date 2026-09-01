@@ -1126,6 +1126,12 @@ export const updateStageItemInputTournamentsTournamentIdStageItemsStageItemIdInp
 
 /**
  * Start Next Round
+ *
+ * Schedule the next Swiss round.
+ *
+ * ``elo_diff_threshold``, ``only_recommended``, and ``iterations`` apply only when the
+ * stage item has more than 20 teams (greedy fallback). Smaller Swiss stage items use the
+ * exact round optimizer, which ignores these parameters so a round can always be filled.
  */
 export const startNextRoundTournamentsTournamentIdStageItemsStageItemIdStartNextRoundPost = <
   ThrowOnError extends boolean = false,

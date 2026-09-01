@@ -2368,7 +2368,14 @@
             "type": "string"
           },
           "pairing_mode": {
-            "$ref": "#/components/schemas/PairingMode"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PairingMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ranking_id": {
             "title": "Ranking Id",
@@ -5698,6 +5705,7 @@
     },
     "/tournaments/{tournament_id}/stage_items/{stage_item_id}/start_next_round": {
       "post": {
+        "description": "Schedule the next Swiss round.\n\n``elo_diff_threshold``, ``only_recommended``, and ``iterations`` apply only when the\nstage item has more than 20 teams (greedy fallback). Smaller Swiss stage items use the\nexact round optimizer, which ignores these parameters so a round can always be filled.",
         "operationId": "start_next_round_tournaments__tournament_id__stage_items__stage_item_id__start_next_round_post",
         "parameters": [
           {

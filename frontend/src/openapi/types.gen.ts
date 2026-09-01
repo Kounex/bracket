@@ -1293,7 +1293,7 @@ export type StageItemUpdateBody = {
    * Name
    */
   name: string;
-  pairing_mode: PairingMode;
+  pairing_mode: PairingMode | null;
   /**
    * Ranking Id
    */

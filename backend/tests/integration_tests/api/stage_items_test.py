@@ -146,23 +146,43 @@ async def test_stage_item_pairing_mode(
         )
         [stage] = await get_full_tournament_details(auth_context.tournament.id)
         stage_item = max(stage.stage_items, key=lambda si: si.id)
-        assert stage_item.pairing_mode is PairingMode.SOCIAL
+        try:
+            assert stage_item.pairing_mode is PairingMode.SOCIAL
 
-        # Update to COMPETITIVE
-        assert (
-            await send_tournament_request(
-                HTTPMethod.PUT,
-                f"stage_items/{stage_item.id}",
-                auth_context,
-                json={
-                    "name": stage_item.name,
-                    "ranking_id": stage_item.ranking_id,
-                    "pairing_mode": PairingMode.COMPETITIVE.value,
-                },
+            assert (
+                await send_tournament_request(
+                    HTTPMethod.PUT,
+                    f"stage_items/{stage_item.id}",
+                    auth_context,
+                    json={
+                        "name": stage_item.name,
+                        "ranking_id": stage_item.ranking_id,
+                        "pairing_mode": PairingMode.COMPETITIVE.value,
+                    },
+                )
+                == SUCCESS_RESPONSE
             )
-            == SUCCESS_RESPONSE
-        )
-        [stage] = await get_full_tournament_details(auth_context.tournament.id)
-        assert max(stage.stage_items, key=lambda si: si.id).pairing_mode is PairingMode.COMPETITIVE
+            [stage] = await get_full_tournament_details(auth_context.tournament.id)
+            assert (
+                max(stage.stage_items, key=lambda si: si.id).pairing_mode is PairingMode.COMPETITIVE
+            )
 
-        await sql_delete_stage_item_with_foreign_keys(stage_item.id)
+            # Omitting pairing_mode must not clobber the stored value (old API clients).
+            assert (
+                await send_tournament_request(
+                    HTTPMethod.PUT,
+                    f"stage_items/{stage_item.id}",
+                    auth_context,
+                    json={
+                        "name": stage_item.name,
+                        "ranking_id": stage_item.ranking_id,
+                    },
+                )
+                == SUCCESS_RESPONSE
+            )
+            [stage] = await get_full_tournament_details(auth_context.tournament.id)
+            assert (
+                max(stage.stage_items, key=lambda si: si.id).pairing_mode is PairingMode.COMPETITIVE
+            )
+        finally:
+            await sql_delete_stage_item_with_foreign_keys(stage_item.id)
