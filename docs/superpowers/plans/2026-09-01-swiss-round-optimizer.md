@@ -466,7 +466,13 @@ Expected: PASS (6 tests)
 
 - [ ] **Step 5: Lint**
 
-Run: `cd backend && uv run ruff format --check bracket/ tests/ && uv run ruff check bracket/ tests/ && uv run mypy bracket/`
+Run:
+
+```bash
+cd backend && uv run ruff format --check bracket/ tests/ && uv run ruff check bracket/ tests/ && \
+  uv run mypy bracket/
+```
+
 Expected: all clean (fix formatting with `uv run ruff format` if needed)
 
 - [ ] **Step 6: Commit**
@@ -487,7 +493,9 @@ git commit -m "feat: exact Swiss round optimizer with social/competitive pairing
 
 **Interfaces:**
 
-- Consumes: `get_optimal_round_pairings` (Task 2); `get_previous_matches_hashes`, `get_number_of_inputs_played_per_input` from `bracket.logic.scheduling.ladder_teams`; `PairingMode` (Task 1).
+- Consumes: `get_optimal_round_pairings` (Task 2); `get_previous_matches_hashes` and
+  `get_number_of_inputs_played_per_input` from `bracket.logic.scheduling.ladder_teams`;
+  `PairingMode` (Task 1).
 
 - [ ] **Step 1: Write the failing integration test**
 
