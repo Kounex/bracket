@@ -1,5 +1,5 @@
 # Build static files
-FROM node:25-alpine AS builder
+FROM node:25.9.0-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN apk add pnpm && \
     pnpm build
 
 # Production image, copy all the static files and run next
-FROM caddy:2-alpine AS runner
+FROM caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f AS runner
 
 WORKDIR /app
 

@@ -1,4 +1,4 @@
-FROM python:3.14-alpine3.22
+FROM python:3.14.5-alpine3.22@sha256:6b91e66ab2a880ce9ca5a1b91c70f45963ff71ff68268df056336e1a657d5efd
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 RUN rm -rf /var/cache/apk/*

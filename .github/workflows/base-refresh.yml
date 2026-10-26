@@ -1,0 +1,73 @@
+# Our fork only (Kounex/bracket): keeps the pinned bases fresh and cuts a patch
+# release, since Dependabot version updates are off on forks. From
+# Kounex/it-env templates/container-image/release-flows/.
+name: base refresh
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Tag a release even if other commits are unreleased
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: base-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Refresh pinned bases
+        id: pins
+        run: |
+          python3 .github/scripts/refresh_bases.py backend/Dockerfile frontend/Dockerfile | tee changes.txt
+          if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Test build
+        if: steps.pins.outputs.changed == 'true'
+        run: |
+          docker build -f backend/Dockerfile backend
+          docker build -f frontend/Dockerfile frontend
+
+      - name: Commit, tag and publish
+        if: steps.pins.outputs.changed == 'true' || inputs.force
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git commit -am "chore: refresh pinned base images" -m "$(cat changes.txt)"
+            git push origin HEAD:"$GITHUB_REF_NAME"
+          fi
+          last=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*')
+          if [ "$FORCE" != true ] && git log --format='%an' "$last..HEAD" | grep -v -x 'github-actions\[bot\]' | grep -q .; then
+            echo "::notice::Unreleased commits since $last; the refreshed bases ship with the next normal release."
+            exit 0
+          fi
+          IFS=. read -r major minor patch <<<"${last#v}"
+          next="v$major.$minor.$((patch + 1))"
+          git tag "$next"
+          git push origin "$next"
+          gh workflow run docker-publish.yml --ref "$next"
+          {
+            echo "Automatic base-image refresh. No code changes."
+            echo
+            sed 's/^/- /' changes.txt
+            echo
+            echo "**Full changelog**: https://github.com/$GITHUB_REPOSITORY/compare/$last...$next"
+          } > notes.md
+          gh release create "$next" --title "$next" --notes-file notes.md --latest=false
