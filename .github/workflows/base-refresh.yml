@@ -54,12 +54,17 @@ jobs:
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
           last=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*')
-          # Unreleased human work = commits not by the bots that change something
+          commits=$(git log --format='%H%x09%an' "$last..HEAD")
+          # Runs under bash -e -o pipefail: no early-exit pipes (grep -q), use grep -c.
+          # Unreleased human work = commits not by the bot that change something
           # outside .github/ (CI-only commits don't change what ships).
-          unreleased=$(git log --format='%H%x09%an' "$last..HEAD" | while IFS=$'\t' read -r sha author; do
-            case "$author" in 'dependabot[bot]'|'github-actions[bot]') continue ;; esac
-            git diff-tree --no-commit-id --name-only -r "$sha" | grep -v -q '^\.github/' && echo "$sha"
-          done)
+          unreleased=""
+          while IFS=$'\t' read -r sha author; do
+            [ -n "$sha" ] || continue
+            [ "$author" = 'github-actions[bot]' ] && continue
+            outside=$(git diff-tree --no-commit-id --name-only -r "$sha" | grep -c -v '^\.github/' || true)
+            if [ "$outside" -gt 0 ]; then unreleased="$unreleased $sha"; fi
+          done <<<"$commits"
           if [ "$FORCE" != true ] && [ -n "$unreleased" ]; then
             echo "::notice::Unreleased commits since $last; the refreshed bases ship with the next normal release."
             exit 0
